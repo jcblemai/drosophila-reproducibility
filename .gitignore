@@ -1,0 +1,6 @@
+.DS_Store
+*.docx
+__pycache__/
+figures/
+input_data/
+preprocessed_data/
