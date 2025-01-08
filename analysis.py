@@ -1,229 +1,265 @@
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     custom_cell_magics: kql
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.11.2
-#   kernelspec:
-#     display_name: base
-#     language: python
-#     name: python3
-# ---
-
-# %%
-import pandas as pd
-import utils
-
-from_database = True
-
-if from_database:
-    # Load tables from database
-    dfs = utils.load_all_tables()
-else:
-    dfs = utils.load_dfs(method='pickle')
-
-# %%
-import pickle
-with open('dfs.pickle', 'wb') as f:
-    pickle.dump(dfs, f)
-
-# %%
-
-# %%
-import pickle
-import pandas as pd
-def clean_df(df):
-    columns_to_remove = ['user_id', 'orcid_user_id', 
-                    'created_at', 'updated_at', 'assertion_updated_at', 
-                    'workspace_id', 'user_id', 'doi', 'organism_id', 'pmid', 
-                    'all_tags_json', 'obsolete', 'ext', 'badge_classes','pluralize_title',
-                    'can_attach_file', 'refresh_side_panel', 'icon_classes', 'btn_classes']
-    patterns_to_remove = ['validated', 'filename', 'obsolete_article']
-    for col in columns_to_remove:
-        if col in df.columns:
-            df.drop(col, axis=1, inplace=True)
-    for pattern in patterns_to_remove:
-        cols = [c for c in df.columns if pattern in c]
-        df.drop(cols, axis=1, inplace=True)
-    return df
-
-# load it back with:
-with open('dfs.pickle', 'rb') as f:
-    dfs = pickle.load(f)
-
-
-# preprocess: my unit here is the claims that are in assertion
-# check wich columns have _id
-claims = clean_df(dfs["assertions"])
-id_cols = [col for col in claims.columns if "_id" in col]
-print(id_cols)
-# merge the article columsn
-articles = clean_df(dfs["articles"])
-articles = articles.rename(columns={"id": "article_id"})
-claims = claims.merge(articles, on="article_id", how="left", suffixes=('', '_article')).drop("article_id", axis=1)
-
-
-id_cols = [col for col in claims.columns if "_id" in col]
-print(id_cols)
-
-journals = clean_df(dfs["journals"])
-journals = journals.drop('tag', axis=1).rename(columns={"id": "journal_id", "name": "journal_name"})
-claims = claims.merge(journals, on="journal_id", how="left", suffixes=('', '_journal')).drop("journal_id", axis=1)
-
-# same for assertion_type
-assertion_types = clean_df(dfs["assertion_types"])
-assertion_types = assertion_types.rename(columns={"id": "assertion_type_id", "name": "assertion_type"})
-claims = claims.merge(assertion_types, on="assertion_type_id", how="left", suffixes=('', '_assertion_type')).drop("assertion_type_id", axis=1)
-
-# same for assessment_type_id
-assessment_types = clean_df(dfs["assessment_types"])
-assessment_types = assessment_types.rename(columns={"id": "assessment_type_id", "name": "assessment_type"})
-claims = claims.merge(assessment_types, on="assessment_type_id", how="left", suffixes=('', '_assessment_type')).drop("assessment_type_id", axis=1)
-
-id_cols = [col for col in claims.columns if "_id" in col]
-print(id_cols)
-
-# %%
-claims = claims.drop(['published_at', 'badge_tag_classes','description', 'additional_context', 'references_txt'], axis=1) # most not consistently used accross dataset
-claims = claims.set_index('id')
-claims.to_csv('claims.csv')
-
-
-# %%
-
-def truncate_string(s, max_length=100):
-    """Truncate string to max_length characters."""
-    if isinstance(s, str) and len(s) > max_length:
-        return s[:max_length] + '...'
-    return s
-
-# for LLMs
-df_truncated = claims.copy()
-for col in string_columns:
-    if col in df_truncated.columns:
-        df_truncated[col] = df_truncated[col].apply(lambda x: truncate_string(x))
-
-# Save truncated dataframe
-df_truncated.to_csv('claims_truncated.csv', index=False)
-
-
-# %%
-claims.head(40)
-
 # %%
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 import numpy as np
 
 # Read the CSV file
-df = pd.read_csv('claims.csv')
+df = pd.read_csv('preprocessed_data/claims.csv')
 
 # Filter for major claims
-df_major = df[df['assertion_type'] == 'major_claim']
+major_claims = df[df['assertion_type'] == 'major_claim']
 
 # Create journal type categories
-def categorize_journal(row):
-    if row['journal_name'] in ['Nature', 'Science', 'Cell']:
-        return 'Trophy'
-    elif row['impact_factor'] >= 10:
+def categorize_journal(impact_factor):
+    if pd.isna(impact_factor):
+        return None
+    if impact_factor >= 30:  # Nature, Science, Cell typically have very high IF
+        return 'Trophy Journals'
+    elif impact_factor >= 10:
         return 'High Impact'
     else:
         return 'Low Impact'
 
-df_major['journal_type'] = df_major.apply(categorize_journal, axis=1)
+# Group assessment types
+def group_assessment(assessment):
+    if pd.isna(assessment) or assessment == 'Not assessed':
+        return None
+    if 'Verified' in assessment:
+        return 'Verified'
+    elif 'Challenged' in assessment:
+        return 'Challenged'
+    elif 'Mixed' in assessment:
+        return 'Mixed'
+    elif 'Partially verified' in assessment:
+        return 'Partially Verified'
+    elif 'Unchallenged' in assessment:
+        return 'Unchallenged'
+    else:
+        return None
+
+major_claims['journal_category'] = major_claims['impact_factor'].apply(categorize_journal)
+major_claims['assessment_group'] = major_claims['assessment_type'].apply(group_assessment)
+
+# Create pivot table
+pivot_data = pd.pivot_table(
+    major_claims[major_claims['journal_category'].notna() & major_claims['assessment_group'].notna()],
+    values='num',
+    index='journal_category',
+    columns='assessment_group',
+    aggfunc='count',
+    fill_value=0
+)
+
+# Reorder index
+pivot_data = pivot_data.reindex(['Low Impact', 'High Impact', 'Trophy Journals'])
 
 # Calculate percentages
-grouped = pd.crosstab(df_major['journal_type'], 
-                     df_major['assessment_type'], 
-                     normalize='index') * 100
+pivot_pct = pivot_data.div(pivot_data.sum(axis=1), axis=0) * 100
 
-# Set up the plot style
-plt.style.use('seaborn-whitegrid')
-plt.rcParams['font.family'] = 'sans-serif'
-plt.rcParams['font.sans-serif'] = ['Arial']
-plt.rcParams['font.size'] = 12
-plt.rcParams['axes.labelsize'] = 14
-plt.rcParams['axes.titlesize'] = 16
-plt.rcParams['legend.fontsize'] = 12
-plt.rcParams['figure.figsize'] = (10, 6)
+# Create figure with two subplots
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
 
-# Create figure and axis
-fig, ax = plt.subplots()
-
-# Define colors for each assessment type (colorblind-friendly palette)
+# Define colors for each assessment type
 colors = {
-    'Verified': '#2ecc71',      # green
-    'Challenged': '#e74c3c',    # red
-    'Partially verified': '#f1c40f',  # yellow
-    'Unchallenged': '#95a5a6',  # gray
-    'Mixed': '#9b59b6'          # purple
+    'Unchallenged': '#3498db',
+    'Mixed': '#95a5a6',
+    'Verified': '#2ecc71',
+    'Partially Verified': '#f1c40f',
+    'Challenged': '#e74c3c'
 }
 
-# Create the stacked bar plot
-bottom = np.zeros(len(grouped.index))
+# Plot 1: Absolute numbers
+bottom1 = np.zeros(len(pivot_data))
+for col in ['Unchallenged', 'Mixed', 'Verified', 'Partially Verified', 'Challenged']:
+    if col in pivot_data.columns:
+        ax1.bar(pivot_data.index, pivot_data[col], bottom=bottom1, label=col, color=colors[col])
+        # Add value labels
+        for i in range(len(pivot_data.index)):
+            if pivot_data[col][i] > 0:  # Only show non-zero values
+                ax1.text(i, bottom1[i] + pivot_data[col][i]/2,
+                        f'{int(pivot_data[col][i])}',
+                        ha='center', va='center')
+        bottom1 += pivot_data[col]
 
-for column in grouped.columns:
-    values = grouped[column]
-    ax.bar(grouped.index, values, bottom=bottom, label=column, 
-           color=colors.get(column, '#333333'), width=0.65)
-    bottom += values
+# Plot 2: Percentages
+bottom2 = np.zeros(len(pivot_pct))
+for col in ['Unchallenged', 'Mixed', 'Verified', 'Partially Verified', 'Challenged']:
+    if col in pivot_pct.columns:
+        ax2.bar(pivot_pct.index, pivot_pct[col], bottom=bottom2, label=col, color=colors[col])
+        # Add percentage labels
+        for i in range(len(pivot_pct.index)):
+            if pivot_pct[col][i] > 5:  # Only show labels for segments > 5%
+                ax2.text(i, bottom2[i] + pivot_pct[col][i]/2,
+                        f'{pivot_pct[col][i]:.1f}%',
+                        ha='center', va='center')
+        bottom2 += pivot_pct[col]
 
-# Customize the plot
-ax.set_ylabel('Percentage of Claims (%)')
-ax.set_xlabel('Journal Category')
-ax.set_title('Distribution of Major Claims by Journal Type\nand Assessment Category', 
-             pad=20)
+# Customize the plots
+ax1.set_title('Absolute Number of Major Claims\nby Journal Category and Assessment Type', pad=20)
+ax1.set_xlabel('Journal Category')
+ax1.set_ylabel('Number of Claims')
+ax1.grid(axis='y', linestyle='--', alpha=0.7)
+
+ax2.set_title('Distribution of Major Claims (%)\nby Journal Category and Assessment Type', pad=20)
+ax2.set_xlabel('Journal Category')
+ax2.set_ylabel('Percentage of Claims')
+ax2.grid(axis='y', linestyle='--', alpha=0.7)
 
 # Add legend
-ax.legend(title='Assessment Type', bbox_to_anchor=(1.05, 1), 
-         loc='upper left', frameon=True)
+handles, labels = ax1.get_legend_handles_labels()
+fig.legend(handles, labels, title='Assessment Type',
+          bbox_to_anchor=(1.02, 0.5), loc='center left')
 
-# Add grid
-ax.yaxis.grid(True, linestyle='--', alpha=0.7)
+# Adjust layout
+plt.subplots_adjust(right=0.85)
 
-# Remove top and right spines
-ax.spines['top'].set_visible(False)
-ax.spines['right'].set_visible(False)
+# Print the raw numbers for reference
+print("\nRaw numbers of claims by category:")
+print(pivot_data)
+print("\nPercentages by category:")
+print(pivot_pct.round(1))
 
-# Adjust layout to prevent label cutoff
-plt.tight_layout()
-
-# Add sample sizes at the bottom of each bar
-for i, journal_type in enumerate(grouped.index):
-    count = len(df_major[df_major['journal_type'] == journal_type])
-    ax.text(i, -5, f'n = {count}', ha='center', va='top')
-
-# Extend y-axis slightly to accommodate sample size labels
-ax.set_ylim(-10, 105)
-
-# Save the figure with high resolution
-plt.savefig('journal_claims_distribution.png', 
-            dpi=300, 
-            bbox_inches='tight', 
-            facecolor='white', 
-            edgecolor='none')
-plt.savefig('journal_claims_distribution.pdf', 
-            bbox_inches='tight', 
-            facecolor='white', 
-            edgecolor='none')
-
-# Display counts
-counts = pd.crosstab(df_major['journal_type'], df_major['assessment_type'])
-print("\nRaw counts:")
-print(counts)
-
-# Display percentages
-print("\nPercentages:")
-print(grouped.round(1))
+# save as png and pdf in figures/
+plt.savefig('figures/claims_by_journal_and_assessment.png', bbox_inches='tight')
+plt.savefig('figures/claims_by_journal_and_assessment.pdf', bbox_inches='tight')
 
 # %%
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
+# Read the CSV file
+df = pd.read_csv('preprocessed_data/claims.csv')
 
+# Filter for major claims
+major_claims = df[df['assertion_type'] == 'major_claim'].copy()
+
+# Group assessment types
+def group_assessment(assessment):
+    if pd.isna(assessment) or assessment == 'Not assessed':
+        return None
+    if 'Verified' in str(assessment):
+        return 'Verified'
+    elif 'Challenged' in str(assessment):
+        return 'Challenged'
+    elif 'Mixed' in str(assessment):
+        return 'Mixed'
+    elif 'Partially verified' in str(assessment):
+        return 'Partially Verified'
+    elif 'Unchallenged' in str(assessment):
+        return 'Unchallenged'
+    else:
+        return None
+
+# Create year bins
+def bin_years(year):
+    if pd.isna(year):
+        return None
+    if year <= 1991:
+        return '≤1991'
+    elif year <= 1996:
+        return '1992-1996'
+    elif year <= 2001:
+        return '1997-2001'
+    elif year <= 2006:
+        return '2002-2006'
+    else:
+        return '2007-2011'
+
+major_claims['assessment_group'] = major_claims['assessment_type'].apply(group_assessment)
+major_claims['year_group'] = major_claims['year'].apply(bin_years)
+
+# Create pivot table
+pivot_data = pd.pivot_table(
+    major_claims[major_claims['year_group'].notna() & major_claims['assessment_group'].notna()],
+    values='num',
+    index='year_group',
+    columns='assessment_group',
+    aggfunc='count',
+    fill_value=0
+)
+
+# Define year order
+year_order = ['≤1991', '1992-1996', '1997-2001', '2002-2006', '2007-2011']
+pivot_data = pivot_data.reindex(index=year_order)
+
+# Calculate percentages
+pivot_pct = pivot_data.div(pivot_data.sum(axis=1), axis=0) * 100
+
+# Create figure with two subplots
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+
+# Define colors and order
+colors = {
+    'Unchallenged': '#3498db',
+    'Mixed': '#95a5a6',
+    'Verified': '#2ecc71',
+    'Partially Verified': '#f1c40f',
+    'Challenged': '#e74c3c'
+}
+
+assessment_order = ['Unchallenged', 'Mixed', 'Verified', 'Partially Verified', 'Challenged']
+
+# Plot 1: Absolute numbers
+bottom1 = np.zeros(len(pivot_data))
+for col in assessment_order:
+    if col in pivot_data.columns:
+        ax1.bar(pivot_data.index, pivot_data[col], bottom=bottom1, 
+                label=col, color=colors[col])
+        # Add value labels
+        for i in range(len(pivot_data.index)):
+            if pivot_data[col][i] > 0:  # Only show non-zero values
+                ax1.text(i, bottom1[i] + pivot_data[col][i]/2,
+                        f'{int(pivot_data[col][i])}',
+                        ha='center', va='center')
+        bottom1 += pivot_data[col]
+
+# Plot 2: Percentages
+bottom2 = np.zeros(len(pivot_pct))
+for col in assessment_order:
+    if col in pivot_pct.columns:
+        ax2.bar(pivot_pct.index, pivot_pct[col], bottom=bottom2, 
+                label=col, color=colors[col])
+        # Add percentage labels
+        for i in range(len(pivot_pct.index)):
+            if pivot_pct[col][i] > 5:  # Only show labels for segments > 5%
+                ax2.text(i, bottom2[i] + pivot_pct[col][i]/2,
+                        f'{pivot_pct[col][i]:.1f}%',
+                        ha='center', va='center')
+        bottom2 += pivot_pct[col]
+
+# Customize the plots
+ax1.set_title('Absolute Number of Major Claims by Year', pad=20)
+ax1.set_xlabel('Year Range')
+ax1.set_ylabel('Number of Claims')
+ax1.grid(axis='y', linestyle='--', alpha=0.7)
+
+ax2.set_title('Distribution of Major Claims (%) by Year', pad=20)
+ax2.set_xlabel('Year Range')
+ax2.set_ylabel('Percentage of Claims')
+ax2.grid(axis='y', linestyle='--', alpha=0.7)
+
+# Rotate x-axis labels for better readability
+ax1.tick_params(axis='x', rotation=45)
+ax2.tick_params(axis='x', rotation=45)
+
+# Add legend
+handles, labels = ax1.get_legend_handles_labels()
+fig.legend(handles, labels, title='Assessment Type',
+          bbox_to_anchor=(1.02, 0.5), loc='center left')
+
+# Adjust layout
+plt.subplots_adjust(right=0.85, bottom=0.15)
+
+# Print the raw numbers for reference
+print("\nRaw numbers of claims by year:")
+print(pivot_data)
+print("\nPercentages by year:")
+print(pivot_pct.round(1))
+
+# save as png and pdf in figures/
+plt.savefig('figures/claims_by_year.png', bbox_inches='tight')
+plt.savefig('figures/claims_by_year.pdf', bbox_inches='tight')
 
 # %%
 claims = clean_df(claims)
@@ -233,5 +269,7 @@ claims.c
 claims.columns
 
 # %%
+
+
 
 
