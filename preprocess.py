@@ -28,11 +28,11 @@ else:
     dfs = utils.load_dfs(method='pickle')
 
 # %%
-import pickle
-with open('preprocessed_data/dfs.pickle', 'wb') as f:
-    pickle.dump(dfs, f)
-
-# %%
+if from_database:
+    # Save tables to pickle
+    import pickle
+    with open('preprocessed_data/dfs.pickle', 'wb') as f:
+        pickle.dump(dfs, f)
 
 # %%
 import pickle
@@ -110,5 +110,5 @@ for col in string_columns:
         df_truncated[col] = df_truncated[col].apply(lambda x: truncate_string(x))
 
 # Save truncated dataframe
-df_truncated.to_csv('preprocessed_data/claims_truncated.csv', index=False)
+df_truncated.to_csv('preprocessed_data/claims_truncated_for_llm.csv', index=False)
 
