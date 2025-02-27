@@ -65,7 +65,11 @@ with open('preprocessed_data/dfs.pickle', 'rb') as f:
 
 # preprocess: my unit here is the claims that are in assertion
 # check wich columns have _id
+claims = dfs["assertions"]
+claims = claims[claims["obsolete"] == False]
+
 claims = clean_df(dfs["assertions"])
+
 id_cols = [col for col in claims.columns if "_id" in col]
 print(id_cols)
 # merge the article columsn
