@@ -1,19 +1,7 @@
-# -*- coding: utf-8 -*-
-# ---
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: -all
-#     custom_cell_magics: kql
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.11.2
-#   kernelspec:
-#     display_name: base
-#     language: python
-#     name: python3
-# ---
+# %% [markdown]
+# # Extract claims for the database
+# 
+# ## 1. Load all tables from the databases
 
 # %%
 import pandas as pd
@@ -46,7 +34,7 @@ import pandas as pd
 def clean_df(df):
     columns_to_remove = ['user_id', 'orcid_user_id', 
                     'created_at', 'updated_at', 'assertion_updated_at', 
-                    'workspace_id', 'user_id', 'doi', 'organism_id', # 'pmid', 
+                    'workspace_id', 'user_id', 'doi', 'organism_id', 
                     'all_tags_json', 'obsolete', 'ext', 'badge_classes','pluralize_title',
                     'can_attach_file', 'refresh_side_panel', 'icon_classes', 'btn_classes']
     patterns_to_remove = ['validated', 'filename', 'obsolete_article']
@@ -108,7 +96,6 @@ for col in string_columns:
 
 claims.to_csv('preprocessed_data/claims.csv')
 
-
 # %%
 def truncate_string(s, max_length=20):
     """Truncate string to max_length characters."""
@@ -126,5 +113,8 @@ for col in string_columns:
 
 # Save truncated dataframe
 df_truncated.to_csv('preprocessed_data/claims_truncated_for_llm.csv', index=False)
+
+# %%
 df_truncated
+
 

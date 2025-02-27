@@ -27,6 +27,9 @@ SMALL_SIZE = 14
 MEDIUM_SIZE = 16
 BIGGER_SIZE = 18
 
+df = pd.read_csv('preprocessed_data/claims_truncated_for_llm.csv')
+
+
 plt.rc('font', size=SMALL_SIZE)
 plt.rc('axes', titlesize=BIGGER_SIZE)
 plt.rc('axes', labelsize=MEDIUM_SIZE)
@@ -222,6 +225,35 @@ plt.savefig('figures/claims_absolute.pdf', bbox_inches='tight')
 fig2, ax2 = create_percentage_plot(df)
 plt.savefig('figures/claims_percentage.png', dpi=300, bbox_inches='tight')
 plt.savefig('figures/claims_percentage.pdf', bbox_inches='tight')
+
+# %%
+major_claims = df[df['assertion_type'] == 'major_claim']
+
+# %%
+major_claims = major_claims[~(major_claims['content'].str.contains("Test", na=False))]
+major_claims = major_claims[~(major_claims['content'].str.contains("test", na=False))]
+major_claims
+
+# %%
+# Get unique pairs of journal names and impact factors, sorting by impact factor in descending order
+
+major_claims = df[df['assertion_type'] == 'major_claim']
+
+# Apply categorizations
+major_claims['journal_category'] = major_claims['impact_factor'].apply(categorize_journal)
+major_claims['assessment_group'] = major_claims['assessment_type'].apply(group_assessment)
+    
+unique_pairs = major_claims[["journal_name", "impact_factor"]].drop_duplicates().sort_values("impact_factor", ascending=False)
+for index, row in unique_pairs.iterrows():
+    # Count occurrences of this journal in major_claims
+    count = len(major_claims[major_claims["journal_name"] == row["journal_name"]])
+    print(f"{row['impact_factor']:.1f}\t{row['journal_name']} ({count} claims)")
+
+# %%
+major_claims[["journal_category", "journal_name"]][major_claims["journal_category"] == "Trophy Journals"]["journal_name"].value_counts()
+
+# %%
+claims
 
 # %%
 major_claims[["journal_category", "journal_name"]][major_claims["journal_category"] == "Trophy Journals"]["journal_name"].value_counts()
