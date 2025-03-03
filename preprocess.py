@@ -17,25 +17,28 @@
 
 # %%
 import pandas as pd
+import pickle
 import utils
 
-from_database = True
+from_database = False
 
 if from_database:
     # Load tables from database
     dfs = utils.load_all_tables()
 else:
-    dfs = utils.load_dfs(method='pickle')
+    # Open the file in binary read mode and load the pickle data
+    with open('preprocessed_data/dfs.pickle', 'rb') as f:
+        dfs = pickle.load(f)
 
 # %%
 if from_database:
     # Save tables to pickle
-    import pickle
     with open('preprocessed_data/dfs.pickle', 'wb') as f:
         pickle.dump(dfs, f)
 
-# %%
-
+    # load it back with:
+    with open('preprocessed_data/dfs.pickle', 'rb') as f:
+        dfs = pickle.load(f)
 
 # %% [markdown]
 # ## 2. Create dataframe claims with all the referenced table from the dataframes
@@ -58,17 +61,15 @@ def clean_df(df):
         df.drop(cols, axis=1, inplace=True)
     return df
 
-# load it back with:
-with open('preprocessed_data/dfs.pickle', 'rb') as f:
-    dfs = pickle.load(f)
 
 
 # preprocess: my unit here is the claims that are in assertion
 # check wich columns have _id
 claims = dfs["assertions"]
+print(len(claims))
 claims = claims[claims["obsolete"] == False]
-
-claims = clean_df(dfs["assertions"])
+print(len(claims))
+claims = clean_df(claims)
 
 id_cols = [col for col in claims.columns if "_id" in col]
 print(id_cols)

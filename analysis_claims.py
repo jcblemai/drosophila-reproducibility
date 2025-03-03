@@ -228,11 +228,11 @@ plt.savefig('figures/claims_percentage.pdf', bbox_inches='tight')
 
 # %%
 major_claims = df[df['assertion_type'] == 'major_claim']
+major_claims
 
 # %%
-major_claims = major_claims[~(major_claims['content'].str.contains("Test", na=False))]
-major_claims = major_claims[~(major_claims['content'].str.contains("test", na=False))]
-major_claims
+
+# %%
 
 # %%
 # Get unique pairs of journal names and impact factors, sorting by impact factor in descending order
@@ -253,7 +253,6 @@ for index, row in unique_pairs.iterrows():
 major_claims[["journal_category", "journal_name"]][major_claims["journal_category"] == "Trophy Journals"]["journal_name"].value_counts()
 
 # %%
-claims
 
 # %%
 major_claims[["journal_category", "journal_name"]][major_claims["journal_category"] == "Trophy Journals"]["journal_name"].value_counts()
@@ -489,7 +488,7 @@ plt.savefig('figures/claims_time_percentage.pdf', bbox_inches='tight')
 # ## 3. Sankey diagram og the process.
 
 # %%
-df = pd.read_csv('preprocessed_data/claims_truncated.csv')
+df = pd.read_csv('preprocessed_data/claims_truncated_for_llm.csv')
 print(df.assertion_type.value_counts())
 # TODO: why not only claims ? 
 
