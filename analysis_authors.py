@@ -21,9 +21,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# read the data
-author_info = pd.read_excel('input_data/2025-02-14_last_xlsx/1_Triage_Last author.xlsx', sheet_name='Tri sans les doublons')
-author_info.to_csv('input_data/2025-02-14_last_xlsx/1_Triage_Last author.csv', index=False)
+# Read Author info, which contains all the pairs
+paper_auth_pairs = pd.read_excel('input_data/2025-02-14_last_xlsx/1_Triage_Last author.xlsx', sheet_name='Tri sans les doublons')
+# Drop all columns with 'Unnamed' in the name
+paper_auth_pairs = paper_auth_pairs.drop(columns=[col for col in paper_auth_pairs.columns if 'Unnamed' in col]).drop(columns=['Source'])
+paper_auth_pairs.to_csv('input_data/2025-02-14_last_xlsx/1_Triage_Last author.csv', index=False)
+
 first_authors_claims = pd.read_excel('input_data/2025-02-14_last_xlsx/stats_author.xlsx', sheet_name='First')
 leading_authors_claims = pd.read_excel('input_data/2025-02-14_last_xlsx/stats_author.xlsx', sheet_name='Leading')
 leading_authors_claims["Authorship"]= "Leading"
@@ -33,76 +36,132 @@ first_authors_claims["Authorship"]= "First"
 authors_claims = pd.concat([leading_authors_claims, first_authors_claims])
 authors_claims['Sex'] = authors_claims['Sex'].map({1: 'Male', 0: 'Female'})
 authors_claims = authors_claims.drop(columns=[col for col in authors_claims.columns if '%' in col])
-
-authors_claims.to_csv('input_data/2025-02-14_last_xlsx/stats_author.csv', index=False)
-
-# %%
-authors_claims.rename(columns={'Conituinity': 'Continuity'}, inplace=True)
 authors_claims.rename(columns={'Conituinity': 'Continuity'}, inplace=True)
 authors_claims['Historical lab'] = authors_claims['Historical lab'].astype('boolean')
 authors_claims['Continuity'] = authors_claims['Continuity'].astype('boolean')
-authors_claims
+authors_claims.to_csv('input_data/2025-02-14_last_xlsx/stats_author.csv', index=False)
+
+
+# %% [markdown]
+# It seems that
+# - sex -> FH
+# - PhD Post-doc -> FH
+# - Become a Pi -> FH
+# - current job -> FH
+# - MD -> **???**
+# - Affiliation -> Both
+# - Country -> Both
+# - Ivy League -> Both
 
 # %%
-# Drop all columns with 'Unnamed' in the name
-author_info = author_info.drop(columns=[col for col in author_info.columns if 'Unnamed' in col]).drop(columns=['Source'])
+def deduplicate_by(df, col_name):
+    """
+    Deduplicate a dataframe based on a specific column, keeping the most common values 
+    for other columns when duplicates exist.
+    
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        The dataframe to deduplicate
+    col_name : str
+        The column name to deduplicate by
+        
+    Returns:
+    --------
+    pandas.DataFrame
+        Deduplicated dataframe with one row per unique value in col_name
+    """
+    from collections import Counter
+    import pandas as pd
+    import numpy as np
+    
+    # Create a list to store unique values and their most common attribute values
+    unique_rows = []
+    
+    # Get unique values in the specified column
+    unique_values = df[col_name].unique()
+    
+    # For each unique value
+    for value in unique_values:
+        # Get all rows with this value
+        value_rows = df[df[col_name] == value]
+        
+        # Initialize a row for this unique value
+        unique_row = {col_name: value}
+        
+        # For each column except the one we're deduplicating by
+        for col in df.columns:
+            if col == col_name:
+                continue
+                
+            # Get the most common value
+            values = value_rows[col].dropna().tolist()
+            if len(values) == 0:
+                unique_row[col] = np.nan
+                continue
+                
+            # Use Counter to find the most common value
+            value_counts = Counter(values)
+            most_common_value, count = value_counts.most_common(1)[0]
+            
+            # Check if there are ties for most common value
+            if sum(1 for v, c in value_counts.items() if c == count) > 1:
+                print(f"Warning: Multiple most common values for {value} in column {col}. Choosing {most_common_value}")
+            
+            unique_row[col] = most_common_value
+        
+        unique_rows.append(unique_row)
+    
+    # Create a new DataFrame from the unique values
+    result_df = pd.DataFrame(unique_rows)
+    
+    # Reorder columns to match original DataFrame
+    result_df = result_df[df.columns]
+    
+    return result_df
 
+# %%
+paper_auth_pairs_LH = paper_auth_pairs[["last author", "Affiliation", "Country", "Ivy league"]]
+paper_auth_pairs_LH = deduplicate_by(paper_auth_pairs_LH, "last author")
+claims_LH = authors_claims[authors_claims['Authorship'] == 'Leading']
+
+
+# %%
+# create merge columns: lowercased and stripped of accents
+paper_auth_pairs_LH['lh_proc'] = paper_auth_pairs_LH['last author'].str.lower()
+paper_auth_pairs_LH['lh_proc'] = paper_auth_pairs_LH['lh_proc'].str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8')
+claims_LH['lh_proc'] = claims_LH['Name'].str.lower()
+claims_LH['lh_proc'] = claims_LH['lh_proc'].str.normalize('NFKD').str.encode('ascii', errors='ignore').str.decode('utf-8')
+# replace ando i by ando
+claims_LH['lh_proc'] = claims_LH['lh_proc'].str.replace('ando i', 'ando')
+
+all_LH = pd.merge(claims_LH, paper_auth_pairs_LH, on='lh_proc', how='outer')
+print(len(claims_LH), len(paper_auth_pairs_LH), len(all_LH))
+
+# %%
+unique_pairs = all_LH[["Name", "last author", "lh_proc"]].drop_duplicates().sort_values("last author", ascending=True)
+for i in range(0, len(unique_pairs)):
+    if pd.isna(unique_pairs.iloc[i]['last author']) or pd.isna(unique_pairs.iloc[i]['Name']):
+        print('💥 ', end='')
+    print(f"{unique_pairs.iloc[i]['lh_proc']:<20} {unique_pairs.iloc[i]['last author']:<20}  {unique_pairs.iloc[i]['Name']}")
+
+# %%
+all_LH_inner = pd.merge(claims_LH, paper_auth_pairs_LH, on='lh_proc', how='inner')
+print(len(all_LH_inner))
 
 # %% [markdown]
 # ## Let's go for last authors first
 
 # %%
-unique_leading_author = authors_claims[authors_claims['Authorship'] == 'Leading']
+all_LH_inner
 
 # %%
-author_info
+unique_leading_author
 
 # %%
 
-
-def aggregate_author_info(df):
-    """
-    Groups author information by last author and aggregates other columns 
-    by taking the most common value.
-    
-    Args:
-        df: pandas DataFrame with author information
-    Returns:
-        DataFrame grouped by last author with most common values for other columns
-    """
-    
-    # Define aggregation function to get most common value
-    def most_common(series):
-        # Return first value if all are null/nan
-        if series.isna().all():
-            return pd.NA
-        # Get most common non-null value
-        return series.mode().iloc[0]
-    
-    # Group by last author and aggregate other columns
-    grouped = df.groupby('last author').agg({
-        'first author': 'first',  # Take first value for first author
-        'Sex': most_common,
-        'PhD Post-doc': most_common,
-        'Become a Pi': most_common,
-        'current job': most_common,
-        'MD': most_common,
-        'Affiliation': 'first',
-        'Country': most_common,
-        'Ivy league': most_common
-    }).reset_index()
-    
-    # Clean up column names
-    grouped.columns = [col.strip() for col in grouped.columns]
-    
-    return grouped
-
-# Example usage:
-grouped_authors_info = aggregate_author_info(author_info)
-grouped_authors_info
-
 # %%
-author_info
+paper_auth_pairs
 
 # %%
 
@@ -113,11 +172,7 @@ right_on='last author', how='left').drop(columns=['last author', 'first author']
 # %%
 leading_authors_df
 
-# %% [markdown]
-# leading_authors_df
-
 # %%
-leading_authors_df.to_csv('test.csv', index=False)
 
 # %%
 import pandas as pd
