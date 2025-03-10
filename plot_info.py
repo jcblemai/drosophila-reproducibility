@@ -48,6 +48,7 @@ def group_assessment(assessment):
     elif 'Unchallenged' in str(assessment):
         return 'Unchallenged'
     else:
+        print(f"Warning: {assessment} is unclear")
         return None
 
 ### EXPANDED ASSESSEMENT CATEGORIES ###
@@ -97,7 +98,7 @@ def group_detailed_assessment(assessment):
     if pd.isna(assessment) or assessment == 'Not assessed':
         print(f"Warning: {assessment} is unclear")
         return None
-    if assessment == 'Verified':
+    if assessment == 'Verified' or assessment == "Verified by same authors" or assessment == "Verified by reproducibility project":
         return 'Verified'
     elif assessment == 'Challenged by reproducibility project':
         return 'Challenged by reproducibility project'
@@ -114,6 +115,7 @@ def group_detailed_assessment(assessment):
     elif assessment == 'Unchallenged':
         return 'Unchallenged'
     else:
+        print(f"Warning: {assessment} is unclear")
         return None
 
 
@@ -237,9 +239,12 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
         x_label = 'Journal Category'
     
     # Filter out rows with missing values
-    print(len(df_copy))
+
     filtered_df = df_copy[df_copy['group_by'].notna() & df_copy['assessment_group'].notna()].copy()
-    print(len(filtered_df))
+    print(len(filtered_df), len(df_copy))
+    if len(filtered_df) != len(df_copy):
+        print("🛑 missing rows:")
+        print(df_copy[~(df_copy['group_by'].notna() & df_copy['assessment_group'].notna())][["assessment_group", "group_by"]])
     
     # Add standard category column for aggregation (needed for both expanded and non-expanded modes)
     filtered_df.loc[:, 'standard_category'] = filtered_df['assessment_group'].map(lambda x: category_mapping.get(x, None))
@@ -337,8 +342,40 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
                 # Only add label if there's a non-zero value
                 if standard_plot_data.loc[group, std_cat] > 0:
                     # Calculate position for label (center of the category's total height)
-                    bottom_pos = category_positions[std_cat]['bottom'][i]
-                    height = category_positions[std_cat]['height'][i]
+                    # Important: We need to recalculate the bottom and height for each category group
+                    # This ensures labels are centered properly in each category section
+                    
+                    # For expanded categories, recalculate positions based on the detailed data
+                    if use_expanded:
+                        # Find which detailed categories belong to this standard category
+                        detailed_cats = [cat for cat in assessment_order if category_mapping.get(cat) == std_cat]
+                        
+                        # Calculate the bottom position (min of all bottoms for this standard category)
+                        bottom_positions = []
+                        total_height = 0
+                        
+                        for cat in detailed_cats:
+                            if cat in detailed_plot_data.columns and detailed_plot_data.loc[group, cat] > 0:
+                                # Find where this category starts in the stack
+                                cat_bottom = 0
+                                for prev_cat in reversed(assessment_order):
+                                    if prev_cat == cat:
+                                        break
+                                    if prev_cat in detailed_plot_data.columns:
+                                        cat_bottom += detailed_plot_data.loc[group, prev_cat]
+                                
+                                bottom_positions.append(cat_bottom)
+                                total_height += detailed_plot_data.loc[group, cat]
+                        
+                        if not bottom_positions:  # Skip if no categories have data
+                            continue
+                            
+                        bottom_pos = min(bottom_positions)
+                        height = total_height
+                    else:
+                        # For standard categories, use the precalculated positions
+                        bottom_pos = category_positions[std_cat]['bottom'][i]
+                        height = category_positions[std_cat]['height'][i]
                     
                     # Skip if height is zero (avoid division by zero)
                     if height <= 0:
@@ -347,18 +384,22 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
                     # Calculate center position
                     center_pos = bottom_pos + (height / 2)
                     
-                    # Format label
+                    # Format label based on mode
+                    count = int(standard_plot_data.loc[group, std_cat])
+                    pct = standard_pct.loc[group, std_cat]
+                    
                     if mode == 'absolute':
-                        # For absolute mode, show count and percentage
-                        count = int(standard_plot_data.loc[group, std_cat])
-                        pct = standard_pct.loc[group, std_cat]
-                        label_text = f'{count} ({pct:.1f}%)'
-                    else:
-                        # For percentage mode, only show percentage for segments > 5%
-                        pct = standard_pct.loc[group, std_cat]
+                        # For absolute mode, show only percentage
+                        # Skip if percentage is too small
                         if pct <= 5:
                             continue
                         label_text = f'{pct:.1f}%'
+                    else:
+                        # For percentage mode, show only count
+                        # Skip if count is too small
+                        if count < 5:
+                            continue
+                        label_text = f'n={count}'
                     
                     # Add the text label
                     text = ax.text(
