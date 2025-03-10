@@ -297,6 +297,10 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
         } for cat in set(category_mapping.values())
     }
     
+    # Store handles for legend
+    handles = []
+    labels = []
+    
     # Plot each assessment category in reverse order (for proper stacking)
     for cat in reversed(assessment_order):
         if cat in detailed_plot_data.columns:
@@ -308,13 +312,16 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
             category_positions[std_cat]['bottom'] = current_bottom.copy()
             
             # Plot the bar
-            ax.bar(
+            bar = ax.bar(
                 detailed_plot_data.index,
                 detailed_plot_data[cat],
                 bottom=bottom,
-                label=cat,
                 color=assessment_colors[cat]
             )
+            
+            # Store handle and label for legend
+            handles.append(bar)
+            labels.append(cat)
             
             # Update bottom for next bar
             bottom += detailed_plot_data[cat]
@@ -392,8 +399,14 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
     if by_time:
         plt.xticks(rotation=45)
     
-    # Add legend
+    # Reverse handles and labels to match the original order (not reversed)
+    handles = handles[::-1]
+    labels = labels[::-1]
+    
+    # Add legend with corrected order
     legend = ax.legend(
+        handles=handles,
+        labels=labels,
         title='Assessment Type',
         bbox_to_anchor=(1.02, 0.5),
         loc='center left',
