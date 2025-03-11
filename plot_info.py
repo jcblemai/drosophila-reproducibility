@@ -87,8 +87,7 @@ ASSESSMENT_ORDER_EXPANDED = [
 ## Unchallenged, logically inconsistent      22
 ## Mixed                                     12
 ## Challenged by reproducibility project     38
-## Challenged                                26
-
+## Challenged                                26 
 
 
 ## Challenged by same authors                 5
