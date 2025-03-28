@@ -30,7 +30,7 @@ ASSESSMENT_COLORS = {
 
 # Define the assessment category order for consistent plotting (reversed)
                     # TOP                                                          # Bottom
-ASSESSMENT_ORDER = ['Challenged', 'Mixed', 'Unchallenged', 'Partially Verified', 'Verified']
+ASSESSMENT_ORDER = ['Challenged', 'Mixed', 'Partially Verified', 'Unchallenged', 'Verified']
 
 def group_assessment(assessment):
     """Group assessment types into broader categories."""

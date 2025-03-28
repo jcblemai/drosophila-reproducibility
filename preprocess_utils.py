@@ -118,7 +118,8 @@ def deduplicate_by(df, col_name):
             
             # Check if there are ties for most common value
             if sum(1 for v, c in value_counts.items() if c == count) > 1:
-                print(f"Warning: Multiple most common values for {value} in column {col}. Choosing {most_common_value}")
+                print(f"Warning: Multiple most common values for {value:<15} in column {col:<10}. Choosing {most_common_value}")
+                print(f"            among {values}.")
             
             unique_row[col] = most_common_value
         
