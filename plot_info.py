@@ -78,19 +78,6 @@ ASSESSMENT_ORDER_EXPANDED = [
     'Verified'
 ]
 
-## Verified                                 559
-## Verified by reproducibility project        7
-## Verified by same authors                  44
-## Partially verified                        75
-## Unchallenged, logically consistent       111
-## Unchallenged                             107
-## Unchallenged, logically inconsistent      22
-## Mixed                                     12
-## Challenged by reproducibility project     38
-## Challenged                                26 
-
-
-## Challenged by same authors                 5
     
 def group_detailed_assessment(assessment):
     """Group assessment types into detailed categories."""
@@ -251,7 +238,7 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
     # Create pivot tables for both detailed and standard categories
     detailed_pivot = pd.pivot_table(
         filtered_df,
-        values='num',
+        values='article_id',
         index='group_by',
         columns='assessment_group',
         aggfunc='count',
@@ -260,7 +247,7 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
     
     standard_pivot = pd.pivot_table(
         filtered_df,
-        values='num',
+        values='article_id',
         index='group_by',
         columns='standard_category',
         aggfunc='count',
