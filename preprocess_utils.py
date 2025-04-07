@@ -1,6 +1,58 @@
 import pandas as pd
 from sqlalchemy import create_engine, inspect
 
+def clean_df_from_database(df):
+    # Create a copy of the DataFrame at the start
+    df = df.copy()
+    
+    columns_to_remove = ['user_id', 'orcid_user_id', 
+                    'created_at', 'updated_at', 'assertion_updated_at', 
+                    'workspace_id', 'user_id', 'doi', 'organism_id', # 'pmid', 
+                    'all_tags_json', 'obsolete', 'ext', 'badge_classes','pluralize_title',
+                    'can_attach_file', 'refresh_side_panel', 'icon_classes', 'btn_classes']
+    patterns_to_remove = ['validated', 'filename', 'obsolete_article']
+    
+    # Remove existing columns
+    existing_cols = [col for col in columns_to_remove if col in df.columns]
+    if existing_cols:
+        df = df.drop(existing_cols, axis=1)
+    
+    # Remove pattern-matched columns
+    pattern_cols = []
+    for pattern in patterns_to_remove:
+        pattern_cols.extend([c for c in df.columns if pattern in c])
+    if pattern_cols:
+        df = df.drop(pattern_cols, axis=1)
+    
+    return df
+
+def clean_author_keys(df,  column):
+    replacements = {
+        'ando': 'ando i',
+        'derre': 'derre i',
+        'markus': 'markus r'
+    }
+    
+    # Replace values only where they exactly match
+    df.loc[df[column].isin(replacements.keys()), column] = \
+        df.loc[df[column].isin(replacements.keys()), column].map(replacements)
+    
+    return df
+
+def truncate_string(s, max_length=20):
+    """Truncate string to max_length characters."""
+    if isinstance(s, str) and len(s) > max_length:
+        return s[:max_length] + '...'
+    return s
+
+def safe_strip(x):
+    """
+    Safely strip whitespace from strings in a DataFrame column and replace HTML entities.
+    """
+    if x.dtype == "object":
+        return x.apply(lambda val: val.strip().replace('&amp;', '&') if isinstance(val, str) else val)
+    return x
+
 def load_all_tables(database='reprosci', host='localhost', user=None, password=None):
     """
     Load all non-empty tables from PostgreSQL database into DataFrames
@@ -63,8 +115,6 @@ def load_all_tables(database='reprosci', host='localhost', user=None, password=N
         
     finally:
         engine.dispose()
-
-
 
 def deduplicate_by(df, col_name):
     """
@@ -132,3 +182,5 @@ def deduplicate_by(df, col_name):
     result_df = result_df[df.columns]
     
     return result_df
+
+
