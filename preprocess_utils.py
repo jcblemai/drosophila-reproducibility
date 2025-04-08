@@ -26,6 +26,24 @@ def clean_df_from_database(df):
     
     return df
 
+def build_author_key(df, author_name_col, key_col):
+        # Create a copy to avoid modifying the original
+        df = df.copy()
+        
+        # Convert to lowercase and create the key column
+        df[key_col] = df[author_name_col].str.lower()
+        
+        # Normalize unicode characters to ASCII
+        df[key_col] = (df[key_col]
+            .str.normalize('NFKD')
+            .str.encode('ascii', errors='ignore')
+            .str.decode('utf-8'))
+        
+        # Clean the keys using existing function
+        df = clean_author_keys(df, key_col)
+        
+        return df
+
 def clean_author_keys(df,  column):
     replacements = {
         'ando': 'ando i',
