@@ -771,7 +771,7 @@ def create_horizontal_bar_chart(var_grouped, title, labels, show_p_value=True):
     for i, bar_group in enumerate(bars):
         for j, rect in enumerate(bar_group):
             width = rect.get_width()
-            if width > 0.04:  # Only add label if segment is large enough
+            if width > 0.02:  # Only add label if segment is large enough
                 # Position text in center of bar segment
                 x_pos = rect.get_x() + width/2
                 
