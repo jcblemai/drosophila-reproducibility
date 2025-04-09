@@ -697,6 +697,50 @@ def create_sankey_diagram(df):
     return fig
 
 
+def prepare_categorical_variable_data(df, author_metrics, variable, key_col, assessment_columns):
+    """
+    Prepare data for categorical variable comparison plots.
+    
+    Parameters:
+    -----------
+    df : DataFrame
+        The original claims dataframe with all columns
+    author_metrics : DataFrame 
+        The author metrics dataframe with first_author_key as index
+    variable : str
+        The categorical variable column name to analyze
+    
+    Returns:
+    --------
+    DataFrame
+        Data prepared for plotting with the horizontal bar chart function
+    """
+    
+    # Get unique first author keys and their categorical variable values
+    author_variable_mapping = df[[key_col, variable]].drop_duplicates().set_index(key_col)
+    
+    # Merge the author metrics with the categorical variable values
+    combined_data = pd.merge(
+        author_metrics, 
+        author_variable_mapping, 
+        left_on=key_col, 
+        right_index=True,
+        how='left'
+    )
+    
+    # Group by the categorical variable
+    var_grouped = combined_data.groupby(variable).agg({
+        **{col: 'sum' for col in assessment_columns},
+        'Major claims': 'sum',
+        'Articles': 'sum',
+    })
+    
+    # Calculate proportions
+    for col in assessment_columns:
+        var_grouped[f'{col}_prop'] = var_grouped[col] / var_grouped['Major claims']
+    
+    return var_grouped
+
 def create_horizontal_bar_chart(var_grouped, title, labels, show_p_value=True):
     
     # Create figure
