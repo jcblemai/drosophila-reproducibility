@@ -53,16 +53,17 @@ def group_assessment(assessment):
     if pd.isna(assessment) or assessment == 'Not assessed':
         print(f"Warning: {assessment} is unclear")
         return None
-    if 'Verified' in str(assessment):
+    if 'Partially verified' in str(assessment):
+        return 'Partially Verified'
+    elif 'Verified' in str(assessment):
         return 'Verified'
+    elif 'Unchallenged' in str(assessment):
+        return 'Unchallenged'
     elif 'Challenged' in str(assessment):
         return 'Challenged'
     elif 'Mixed' in str(assessment):
         return 'Mixed'
-    elif 'Partially verified' in str(assessment):
-        return 'Partially Verified'
-    elif 'Unchallenged' in str(assessment):
-        return 'Unchallenged'
+
     else:
         print(f"Warning: {assessment} is unclear")
         return None
@@ -95,6 +96,7 @@ ASSESSMENT_ORDER_EXPANDED = [
 ]
 
 # Create a mapping from detailed to standard categories for label aggregation
+# TODO This mapping is not waht shoudl be used for the table, genearlly
 category_mapping = {
     'Challenged by reproducibility project': 'Challenged',
     'Challenged in literature': 'Challenged',
@@ -803,219 +805,16 @@ def create_horizontal_bar_chart(var_grouped, title, labels, show_p_value=True):
 
 
 
+# First author stuff
 
-
-def plot_author_irreproducibility_distribution(
-    df,
-    min_claims=3,
-    title="Distribution of Irreproducibility Across First Authors",
-    fig_size=(12, 10)
-):
-    """
-    Create Figure 4A showing the distribution of irreproducibility across first authors.
-    
-    Parameters:
-    -----------
-    df : pandas DataFrame
-        The dataframe with author-level data
-    min_claims : int, default=3
-        Minimum number of claims for an author to be included
-    title : str
-        Plot title
-    fig_size : tuple
-        Figure size
-        
-    Returns:
-    --------
-    fig, axes : matplotlib Figure and Axes objects
-    """
-    # Filter data to include only authors with minimum number of claims
-    filtered_df = df[df['Major claims'] >= min_claims].copy()
-    
-    # Calculate irreproducibility metrics
-    filtered_df['Challenged_prop'] = filtered_df['Challenged'] / filtered_df['Major claims']
-    
-    # Create a figure with 2x2 subplots
-    fig, axes = plt.subplots(2, 2, figsize=fig_size, gridspec_kw={'height_ratios': [3, 2]})
-    
-    # Panel A: Histogram of challenged proportion
-    ax1 = axes[0, 0]
-    sns.histplot(
-        filtered_df['Challenged_prop'],
-        bins=20,
-        kde=True,
-        color='#e74c3c',
-        alpha=0.7,
-        ax=ax1
-    )
-    
-    ax1.set_xlabel('Proportion of Challenged Claims', fontweight='bold')
-    ax1.set_ylabel('Number of Authors', fontweight='bold')
-    ax1.set_title('A. Distribution of Challenged Claims Proportion', fontweight='bold')
-    ax1.xaxis.set_major_formatter(PercentFormatter(1.0))
-    
-    # Add median and mean lines
-    median_val = filtered_df['Challenged_prop'].median()
-    mean_val = filtered_df['Challenged_prop'].mean()
-    
-    ax1.axvline(median_val, color='black', linestyle='--', alpha=0.7, linewidth=1.5,
-                label=f'Median: {median_val:.1%}')
-    ax1.axvline(mean_val, color='blue', linestyle='-', alpha=0.7, linewidth=1.5,
-                label=f'Mean: {mean_val:.1%}')
-    ax1.legend()
-    
-    # Panel B: Lorenz curve of challenged claims
-    ax2 = axes[0, 1]
-    
-    # Sort authors by challenged proportion
-    sorted_df = filtered_df.sort_values('Challenged_prop')
-    
-    # Calculate cumulative values
-    total_authors = len(sorted_df)
-    total_challenged = sorted_df['Challenged'].sum()
-    
-    # Calculate points for Lorenz curve
-    cum_auth_pct = np.linspace(0, 1, total_authors + 1)
-    cum_chall = np.zeros(total_authors + 1)
-    
-    for i in range(1, total_authors + 1):
-        cum_chall[i] = sorted_df['Challenged'].iloc[:i].sum() / total_challenged
-    
-    # Plot Lorenz curve
-    ax2.plot(cum_auth_pct, cum_chall, color='#e74c3c', linewidth=2.5, label='Lorenz Curve')
-    ax2.plot([0, 1], [0, 1], 'k--', label='Line of Equality')
-    
-    # Calculate Gini coefficient
-    gini = 1 - np.sum((cum_chall[1:] + cum_chall[:-1]) * (1/total_authors))
-    
-    # Annotate Gini coefficient
-    ax2.text(0.95, 0.05, f'Gini: {gini:.2f}', ha='right', va='bottom',
-            transform=ax2.transAxes, fontsize=12,
-            bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
-    
-    ax2.set_xlabel('Cumulative % of Authors', fontweight='bold')
-    ax2.set_ylabel('Cumulative % of Challenged Claims', fontweight='bold')
-    ax2.set_title('B. Concentration of Challenged Claims', fontweight='bold')
-    ax2.legend(loc='upper left')
-    
-    # Panel C: Top authors by number of challenged claims
-    ax3 = axes[1, 0]
-    
-    # Select top 10 authors by number of challenged claims
-    top_authors = filtered_df.sort_values('Challenged', ascending=False).head(10)
-    
-    # Plot horizontal bars
-    bars = ax3.barh(
-        np.arange(len(top_authors)),
-        top_authors['Challenged'],
-        color='#e74c3c',
-        alpha=0.8,
-        edgecolor='white',
-        linewidth=0.5
-    )
-    
-    # Add value labels
-    for i, bar in enumerate(bars):
-        width = bar.get_width()
-        ax3.text(
-            width + 0.1,
-            bar.get_y() + bar.get_height()/2,
-            f"{int(width)}",
-            ha='left',
-            va='center',
-            fontsize=10
-        )
-        
-        # Add proportion labels
-        prop = top_authors['Challenged_prop'].iloc[i]
-        ax3.text(
-            0.5,
-            bar.get_y() + bar.get_height()/2,
-            f"{prop:.0%}",
-            ha='center',
-            va='center',
-            color='white',
-            fontweight='bold',
-            fontsize=10
-        )
-    
-    # Set y-ticks and labels
-    ax3.set_yticks(np.arange(len(top_authors)))
-    ax3.set_yticklabels(top_authors['Name'])
-    
-    ax3.set_xlabel('Number of Challenged Claims', fontweight='bold')
-    ax3.set_title('C. Authors with Most Challenged Claims', fontweight='bold')
-    
-    # Set x-axis as integer
-    ax3.xaxis.set_major_locator(MaxNLocator(integer=True))
-    
-    # Panel D: Scatterplot of challenged vs. total claims
-    ax4 = axes[1, 1]
-    
-    scatter = ax4.scatter(
-        filtered_df['Major claims'],
-        filtered_df['Challenged'],
-        alpha=0.7,
-        c=filtered_df['Challenged_prop'],
-        cmap='OrRd',
-        s=80,
-        edgecolors='white',
-        linewidth=0.5
-    )
-    
-    # Add color bar
-    cbar = plt.colorbar(scatter, ax=ax4)
-    cbar.set_label('Proportion Challenged', fontweight='bold')
-    cbar.ax.yaxis.set_major_formatter(PercentFormatter(1.0))
-    
-    # Plot diagonal reference lines for different percentages
-    max_claims = filtered_df['Major claims'].max()
-    x_vals = np.linspace(0, max_claims, 100)
-    
-    percentages = [0.05, 0.1, 0.25]
-    for p in percentages:
-        ax4.plot(x_vals, p * x_vals, '--', color='gray', alpha=0.5, linewidth=1, 
-                 label=f'{p:.0%} Challenged')
-    
-    # Label some notable authors
-    top_outliers = filtered_df[filtered_df['Challenged'] > 3].nlargest(5, 'Challenged_prop')
-    for _, row in top_outliers.iterrows():
-        ax4.annotate(
-            row['Name'],
-            xy=(row['Major claims'], row['Challenged']),
-            xytext=(5, 5),
-            textcoords='offset points',
-            fontsize=9,
-            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8)
-        )
-    
-    ax4.set_xlabel('Total Claims', fontweight='bold')
-    ax4.set_ylabel('Challenged Claims', fontweight='bold')
-    ax4.set_title('D. Challenged vs. Total Claims by Author', fontweight='bold')
-    ax4.legend(loc='upper left')
-    
-    # Set both axes to start at 0
-    ax4.set_xlim(0, None)
-    ax4.set_ylim(0, None)
-    
-    # Use integer ticks
-    ax4.xaxis.set_major_locator(MaxNLocator(integer=True))
-    ax4.yaxis.set_major_locator(MaxNLocator(integer=True))
-    
-    # Add main title
-    fig.suptitle(title, fontweight='bold', fontsize=BIGGER_SIZE, y=0.98)
-    
-    # Adjust layout
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.9)
-    
-    return fig, axes
 
 def plot_author_irreproducibility_focused(
     df,
-    min_claims=3,
     title="First Author Irreproducibility Distribution",
-    fig_size=(10, 8)
+    fig_size=(10, 8),
+    color_by='Unchallenged prop',
+    cmap='viridis',
+    most_challenged_on_right=True
 ):
     """
     Create a more focused Figure 4A showing the distribution of irreproducibility.
@@ -1023,54 +822,64 @@ def plot_author_irreproducibility_focused(
     Parameters:
     -----------
     df : pandas DataFrame
-        The dataframe with author-level data
-    min_claims : int, default=3
-        Minimum number of claims for an author to be included
+        The prepared dataframe with author-level metrics
     title : str
         Plot title
     fig_size : tuple
         Figure size
+    color_by : str
+        Column name to use for point colors
+    cmap : str or matplotlib colormap
+        Colormap to use for points
+    most_challenged_on_right : bool
+        If True, place authors with highest challenged proportion on the right
         
     Returns:
     --------
     fig, ax : matplotlib Figure and Axes objects
     """
-    # Filter data to include only authors with minimum number of claims
-    filtered_df = df[df['Major claims'] >= min_claims].copy()
-    
-    # Calculate irreproducibility metrics if not already present
-    if 'Challenged_prop' not in filtered_df.columns:
-        filtered_df['Challenged_prop'] = filtered_df['Challenged'] / filtered_df['Major claims']
-    
     # Create a figure with one main plot
     fig, ax = plt.subplots(figsize=fig_size)
     
     # Sort authors by challenged proportion
-    sorted_df = filtered_df.sort_values('Challenged_prop', ascending=False).reset_index(drop=True)
+    sorting_col = 'Challenged prop'
+    sorted_df = df.sort_values(sorting_col, ascending=not most_challenged_on_right).reset_index(drop=True)
     
     # Create rank column (1-indexed)
     sorted_df['Rank'] = np.arange(1, len(sorted_df) + 1)
+
+    scatter_size = 10
     
     # Plot the distribution
     scatter = ax.scatter(
         sorted_df['Rank'],
-        sorted_df['Challenged_prop'],
-        s=sorted_df['Major claims'] * 5,  # Size by total claims
-        c=sorted_df['Challenged'],  # Color by number of challenged claims
-        cmap='OrRd',
+        sorted_df['Challenged prop'],
+        s=sorted_df['Major claims'] * scatter_size,  # Size by total claims
+        c=sorted_df[color_by],  # Color by specified column
+        cmap=cmap,
         alpha=0.8,
         edgecolors='white',
         linewidth=0.5
     )
     
-    # Add color bar for number of challenged claims
+    # Add a line connecting the points
+    ax.plot(
+        sorted_df['Rank'],
+        sorted_df['Challenged prop'],
+        color='gray',
+        alpha=0.5,
+        linestyle='-',
+        linewidth=1
+    )
+    
+    # Add color bar
     cbar = plt.colorbar(scatter, ax=ax)
-    cbar.set_label('Number of Challenged Claims', fontweight='bold')
+    cbar.set_label(f'{color_by}', fontweight='bold')
     
     # Add size legend
     sizes = [5, 10, 20, 50]
     for s in sizes:
-        ax.scatter([], [], s=s*5, c='gray', alpha=0.7, edgecolors='white', linewidth=0.5,
+        ax.scatter([], [], s=s*scatter_size, c='gray', alpha=0.7, edgecolors='white', linewidth=0.5,
                    label=f'{s} Claims')
     
     # Label some notable authors (top 5 with highest proportion)
@@ -1078,7 +887,7 @@ def plot_author_irreproducibility_focused(
     for _, row in top_authors.iterrows():
         ax.annotate(
             row['Name'],
-            xy=(row['Rank'], row['Challenged_prop']),
+            xy=(row['Rank'], row['Challenged prop']),
             xytext=(5, 5),
             textcoords='offset points',
             fontsize=10,
@@ -1089,12 +898,18 @@ def plot_author_irreproducibility_focused(
     # Add horizontal lines for reference
     percentiles = [25, 50, 75]
     for p in percentiles:
-        val = np.percentile(filtered_df['Challenged_prop'], p)
+        val = np.percentile(df['Challenged prop'], p)
         ax.axhline(val, linestyle='--', color='gray', alpha=0.7,
-                  label=f'{p}th Percentile: {val:.1%}')
+                label=f'{p}th Percentile: {val:.1%}')
     
     # Set labels and title
-    ax.set_xlabel('Author Rank (by Challenged Proportion)', fontweight='bold')
+    x_label = 'Author Rank'
+    if most_challenged_on_right:
+        x_label += ' (least to most challenged)'
+    else:
+        x_label += ' (most to least challenged)'
+        
+    ax.set_xlabel(x_label, fontweight='bold')
     ax.set_ylabel('Proportion of Challenged Claims', fontweight='bold')
     ax.set_title(title, fontweight='bold', pad=20)
     
@@ -1103,20 +918,21 @@ def plot_author_irreproducibility_focused(
     
     # Add summary statistics as text
     stats_text = (
-        f"Total Authors: {len(filtered_df)}\n"
-        f"Mean: {filtered_df['Challenged_prop'].mean():.1%}\n"
-        f"Median: {filtered_df['Challenged_prop'].median():.1%}\n"
-        f"Authors with >20% Challenged: {(filtered_df['Challenged_prop'] > 0.2).sum()}"
+        f"Total Authors: {len(df)}\n"
+        f"Mean: {df['Challenged prop'].mean():.1%}\n"
+        f"Median: {df['Challenged prop'].median():.1%}\n"
+        f"Authors with >20% Challenged: {(df['Challenged prop'] > 0.2).sum()}"
     )
     
     ax.text(0.98, 0.98, stats_text, transform=ax.transAxes, ha='right', va='top',
-           fontsize=11, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+        fontsize=11, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
     # Add legend
     ax.legend(title="Total Claims", loc='upper right', bbox_to_anchor=(0.98, 0.65))
     
     # Set y-axis to start at 0
     ax.set_ylim(0, None)
+    ax.set_xlim(1, None)
     
     # Add grid
     ax.grid(axis='y', linestyle='--', alpha=0.3)
@@ -1127,6 +943,176 @@ def plot_author_irreproducibility_focused(
     ax.spines['right'].set_visible(False)
     
     # Adjust layout
+    plt.tight_layout()
+    
+    return fig, ax
+
+
+def plot_challenged_histogram(
+    df,
+    prop_column='Challenged prop',
+    title="Distribution of Challenged Claims Across First Authors",
+    fig_size=(10, 6),
+    color='#e74c3c'
+):
+    """
+    Create a histogram with KDE showing the distribution of challenged claim proportions.
+    
+    Parameters:
+    -----------
+    df : pandas DataFrame
+        The prepared dataframe with author-level metrics
+    prop_column : str
+        Column name containing the proportion values to plot
+    title : str
+        Plot title
+    fig_size : tuple
+        Figure size
+    color : str
+        Color for the histogram bars
+        
+    Returns:
+    --------
+    fig, ax : matplotlib Figure and Axes objects
+    """
+    fig, ax = plt.subplots(figsize=fig_size)
+    
+    # Create histogram with KDE
+    sns.histplot(
+        data=df,
+        x=prop_column,
+        kde=True,
+        bins=20,
+        color=color,
+        alpha=0.7,
+        ax=ax
+    )
+    
+    # Calculate summary statistics
+    mean_val = df[prop_column].mean()
+    median_val = df[prop_column].median()
+    
+    # Add vertical lines for mean and median
+    ax.axvline(mean_val, color='black', linestyle='--', 
+               label=f'Mean: {mean_val:.1%}')
+    ax.axvline(median_val, color='black', linestyle='-', 
+               label=f'Median: {median_val:.1%}')
+    
+    # Add stats information
+    stats_text = (
+        f"Total Authors: {len(df)}\n"
+        f"Mean: {mean_val:.1%}\n"
+        f"Median: {median_val:.1%}\n"
+        f"Std Dev: {df[prop_column].std():.1%}\n"
+        f"Authors with >20% Challenged: {(df[prop_column] > 0.2).sum()} ({(df[prop_column] > 0.2).sum()/len(df):.1%})"
+    )
+    
+    ax.text(0.98, 0.98, stats_text, transform=ax.transAxes, ha='right', va='top',
+           fontsize=11, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+    
+    # Format axes
+    ax.xaxis.set_major_formatter(PercentFormatter(1.0))
+    ax.set_xlabel('Proportion of Challenged Claims', fontweight='bold')
+    ax.set_ylabel('Number of Authors', fontweight='bold')
+    ax.set_title(title, fontweight='bold', pad=20)
+    
+    # Add legend
+    ax.legend()
+    
+    # Remove top and right spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    
+    plt.tight_layout()
+    
+    return fig, ax
+
+def plot_lorenz_curve(
+    df,
+    prop_column='Challenged prop',
+    weight_column='Major claims',
+    title="Distribution Inequality of Challenged Claims",
+    fig_size=(10, 6),
+    color='#e74c3c'
+):
+    """
+    Create a Lorenz curve to visualize inequality in the distribution of challenged claims.
+    Also calculates the Gini coefficient.
+    
+    Parameters:
+    -----------
+    df : pandas DataFrame
+        The prepared dataframe with author-level metrics
+    prop_column : str
+        Column name containing the proportion values to plot
+    weight_column : str
+        Column name containing weights (typically number of claims)
+    title : str
+        Plot title
+    fig_size : tuple
+        Figure size
+    color : str
+        Color for the curve
+        
+    Returns:
+    --------
+    fig, ax : matplotlib Figure and Axes objects
+    """
+    fig, ax = plt.subplots(figsize=fig_size)
+    
+    # Calculate contribution of each author to total challenged claims
+    df = df.copy()
+    df['challenged_count'] = df[prop_column] * df[weight_column]
+    df['contribution'] = df['challenged_count'] / df['challenged_count'].sum()
+    
+    # Sort by contribution
+    df = df.sort_values('contribution')
+    
+    # Calculate cumulative percentage of authors and challenged claims
+    df['cum_authors'] = np.arange(1, len(df) + 1) / len(df)
+    df['cum_challenged'] = df['contribution'].cumsum()
+    
+    # Plot Lorenz curve
+    ax.plot(df['cum_authors'], df['cum_challenged'], color=color, linewidth=2.5)
+    
+    # Plot perfect equality line
+    ax.plot([0, 1], [0, 1], color='black', linestyle='--', label='Perfect Equality')
+    
+    # Calculate Gini coefficient
+    # Area between perfect equality line and Lorenz curve / area under perfect equality line
+    gini = 1 - np.sum((df['cum_challenged'].shift(1, fill_value=0) + df['cum_challenged']) * np.diff(np.append(0, df['cum_authors'])))
+    
+    # Add Gini coefficient as text
+    ax.text(0.98, 0.3, f"Gini Coefficient: {gini:.3f}", transform=ax.transAxes, ha='right',
+           fontsize=12, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+    
+    # Add more detailed statistics
+    stats_text = (
+        f"Top 10% of authors account for: {df['cum_challenged'].iloc[int(0.9*len(df))]:.1%} of challenged claims\n"
+        f"Top 20% of authors account for: {df['cum_challenged'].iloc[int(0.8*len(df))]:.1%} of challenged claims\n"
+        f"Top 50% of authors account for: {df['cum_challenged'].iloc[int(0.5*len(df))]:.1%} of challenged claims"
+    )
+    
+    ax.text(0.98, 0.15, stats_text, transform=ax.transAxes, ha='right', va='top',
+           fontsize=11, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+    
+    # Format axes
+    ax.set_xlabel('Cumulative Proportion of Authors', fontweight='bold')
+    ax.set_ylabel('Cumulative Proportion of Challenged Claims', fontweight='bold')
+    ax.set_title(title, fontweight='bold', pad=20)
+    
+    # Format as percentages
+    ax.xaxis.set_major_formatter(PercentFormatter(1.0))
+    ax.yaxis.set_major_formatter(PercentFormatter(1.0))
+    
+    # Add grid
+    ax.grid(linestyle='--', alpha=0.3)
+    ax.set_axisbelow(True)
+    
+    # Remove top and right spines
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    
     plt.tight_layout()
     
     return fig, ax
