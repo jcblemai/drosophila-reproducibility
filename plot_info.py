@@ -33,6 +33,8 @@ plt.rcParams['savefig.dpi'] = 300
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = ['Arial', 'Helvetica', 'DejaVu Sans']
 
+assessment_columns = ['Unchallenged', 'Verified', 'Partially Verified', 'Mixed', 'Challenged']
+
 ### NORMAL ASSESSEMENT CATEGORIES ###
 
 # Define colors for assessment categories
