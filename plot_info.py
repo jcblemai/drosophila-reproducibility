@@ -1112,32 +1112,45 @@ def plot_lorenz_curve(
     df['challenged_count'] = df[prop_column] * df[weight_column]
     df['contribution'] = df['challenged_count'] / df['challenged_count'].sum()
     
-    # Sort by contribution
-    df = df.sort_values('contribution')
+    # Sort by contribution in DESCENDING order (highest contributors first)
+    df = df.sort_values('contribution', ascending=False)
     
     # Calculate cumulative percentage of authors and challenged claims
     df['cum_authors'] = np.arange(1, len(df) + 1) / len(df)
     df['cum_challenged'] = df['contribution'].cumsum()
     
+    # Now re-sort to get the proper Lorenz curve (lowest contributors first)
+    df = df.sort_values('contribution')
+    
+    # Recalculate cumulative authors and challenged proportions for the curve
+    df['lorenz_cum_authors'] = np.arange(1, len(df) + 1) / len(df)
+    df['lorenz_cum_challenged'] = df['contribution'].cumsum()
+    
     # Plot Lorenz curve
-    ax.plot(df['cum_authors'], df['cum_challenged'], color=color, linewidth=2.5)
+    ax.plot(df['lorenz_cum_authors'], df['lorenz_cum_challenged'], color=color, linewidth=2.5)
     
     # Plot perfect equality line
     ax.plot([0, 1], [0, 1], color='black', linestyle='--', label='Perfect Equality')
     
     # Calculate Gini coefficient
     # Area between perfect equality line and Lorenz curve / area under perfect equality line
-    gini = 1 - np.sum((df['cum_challenged'].shift(1, fill_value=0) + df['cum_challenged']) * np.diff(np.append(0, df['cum_authors'])))
+    gini = 1 - np.sum((df['lorenz_cum_challenged'].shift(1, fill_value=0) + df['lorenz_cum_challenged']) * np.diff(np.append(0, df['lorenz_cum_authors'])))
     
     # Add Gini coefficient as text
     ax.text(0.98, 0.3, f"Gini Coefficient: {gini:.3f}", transform=ax.transAxes, ha='right',
            fontsize=12, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
+    # Get the stats for top contributors (from the descending sorted data)
+    # We need to get the stats from the original descending-sorted dataframe
+    top_10_pct = df.sort_values('contribution', ascending=False)['cum_challenged'].iloc[int(0.1*len(df))-1]
+    top_20_pct = df.sort_values('contribution', ascending=False)['cum_challenged'].iloc[int(0.2*len(df))-1]
+    top_50_pct = df.sort_values('contribution', ascending=False)['cum_challenged'].iloc[int(0.5*len(df))-1]
+    
     # Add more detailed statistics
     stats_text = (
-        f"Top 10% of authors account for: {df['cum_challenged'].iloc[int(0.9*len(df))]:.1%} of challenged claims\n"
-        f"Top 20% of authors account for: {df['cum_challenged'].iloc[int(0.8*len(df))]:.1%} of challenged claims\n"
-        f"Top 50% of authors account for: {df['cum_challenged'].iloc[int(0.5*len(df))]:.1%} of challenged claims"
+        f"Top 10% of authors account for: {top_10_pct:.1%} of challenged claims\n"
+        f"Top 20% of authors account for: {top_20_pct:.1%} of challenged claims\n"
+        f"Top 50% of authors account for: {top_50_pct:.1%} of challenged claims"
     )
     
     ax.text(0.98, 0.15, stats_text, transform=ax.transAxes, ha='right', va='top',
