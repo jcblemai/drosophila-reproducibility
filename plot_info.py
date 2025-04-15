@@ -346,89 +346,86 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
             category_heights = bottom - current_bottom
             category_positions[std_cat]['height'] += category_heights
     
-    # Add labels for standard categories
-    standard_categories = set(category_mapping.values()) if use_expanded else assessment_order
-    for std_cat in standard_categories:
-        if std_cat in standard_plot_data.columns:
-            for i, group in enumerate(standard_plot_data.index):
-                # Only add label if there's a non-zero value
-                if standard_plot_data.loc[group, std_cat] > 0:
-                    # Calculate position for label
-                    if use_expanded:
-                        # Find which detailed categories belong to this standard category
-                        detailed_cats = [cat for cat in assessment_order if category_mapping.get(cat) == std_cat]
-                        
-                        # Calculate the bottom position and total height
-                        bottom_positions = []
-                        total_height = 0
-                        
-                        for cat in detailed_cats:
-                            if cat in detailed_plot_data.columns and detailed_plot_data.loc[group, cat] > 0:
-                                # Find where this category starts in the stack
-                                cat_bottom = 0
-                                for prev_cat in reversed(assessment_order):
-                                    if prev_cat == cat:
-                                        break
-                                    if prev_cat in detailed_plot_data.columns:
-                                        cat_bottom += detailed_plot_data.loc[group, prev_cat]
+    # Add labels for standard categories - ONLY in percentage mode
+    if mode == 'percentage':  # Only add percentage labels in percentage mode
+        standard_categories = set(category_mapping.values()) if use_expanded else assessment_order
+        for std_cat in standard_categories:
+            if std_cat in standard_plot_data.columns:
+                for i, group in enumerate(standard_plot_data.index):
+                    # Only add label if there's a non-zero value
+                    if standard_plot_data.loc[group, std_cat] > 0:
+                        # Calculate position for label
+                        if use_expanded:
+                            # Find which detailed categories belong to this standard category
+                            detailed_cats = [cat for cat in assessment_order if category_mapping.get(cat) == std_cat]
+                            
+                            # Calculate the bottom position and total height
+                            bottom_positions = []
+                            total_height = 0
+                            
+                            for cat in detailed_cats:
+                                if cat in detailed_plot_data.columns and detailed_plot_data.loc[group, cat] > 0:
+                                    # Find where this category starts in the stack
+                                    cat_bottom = 0
+                                    for prev_cat in reversed(assessment_order):
+                                        if prev_cat == cat:
+                                            break
+                                        if prev_cat in detailed_plot_data.columns:
+                                            cat_bottom += detailed_plot_data.loc[group, prev_cat]
+                                    
+                                    bottom_positions.append(cat_bottom)
+                                    total_height += detailed_plot_data.loc[group, cat]
+                            
+                            if not bottom_positions:  # Skip if no categories have data
+                                continue
                                 
-                                bottom_positions.append(cat_bottom)
-                                total_height += detailed_plot_data.loc[group, cat]
+                            bottom_pos = min(bottom_positions)
+                            height = total_height
+                        else:
+                            # For standard categories, use the precalculated positions
+                            bottom_pos = category_positions[std_cat]['bottom'][i]
+                            height = category_positions[std_cat]['height'][i]
                         
-                        if not bottom_positions:  # Skip if no categories have data
+                        # Skip if height is zero (avoid division by zero)
+                        if height <= 0:
+                            continue
+                        
+                        # Calculate center position
+                        center_pos = bottom_pos + (height / 2)
+                        
+                        # Get the percentage for this category
+                        pct = standard_pct.loc[group, std_cat]
+                        count = int(standard_pivot.loc[group, std_cat])
+                        
+                        # Skip small categories except for 'Challenged'
+                        if pct <= 5 and std_cat != 'Challenged':
                             continue
                             
-                        bottom_pos = min(bottom_positions)
-                        height = total_height
-                    else:
-                        # For standard categories, use the precalculated positions
-                        bottom_pos = category_positions[std_cat]['bottom'][i]
-                        height = category_positions[std_cat]['height'][i]
-                    
-                    # Skip if height is zero (avoid division by zero)
-                    if height <= 0:
-                        continue
-                    
-                    # Calculate center position
-                    center_pos = bottom_pos + (height / 2)
-                    
-                    # Format label based on mode
-                    count = int(standard_pivot.loc[group, std_cat])  # Always get the actual count
-                    pct = standard_pct.loc[group, std_cat]  # Always get the percentage
-                    
-                    if mode == 'absolute':
-                        # For absolute mode, show percentage
-                        if pct <= 10 and std_cat != 'Challenged':
-                            continue
+                        # Format as percentage for the percentage plot
                         label_text = f'{pct:.1f}%'
-                    else:
-                        # For percentage mode, show count (n=) as requested
-                        if count < 10 and std_cat != 'Challenged':
-                            continue
-                        label_text = f'n={count}'
-                    
-                    # Add the text label
-                    text = ax.text(
-                        i, center_pos,
-                        label_text,
-                        ha='center', va='center',
-                        color='white', fontweight='bold'
-                    )
-                    text.set_path_effects([withStroke(linewidth=3, foreground='black')])
+                        
+                        # Add the text label
+                        text = ax.text(
+                            i, center_pos,
+                            label_text,
+                            ha='center', va='center',
+                            color='white', fontweight='bold'
+                        )
+                        text.set_path_effects([withStroke(linewidth=3, foreground='black')])
     
-    # Add total counts at the top of each column
-    for i, group in enumerate(group_order):
-        if group in row_totals.index:
-            total = int(row_totals[group])
-            # Position the text slightly above the top of the bar
-            top_pos = bottom[i] + 1  # Add a small offset
-            ax.text(
-                i, top_pos,
-                f'n={total}',
-                ha='center', va='bottom',
-                fontweight='bold',
-                fontsize=MEDIUM_SIZE
-            )
+        # Add total counts at the top of each column
+        for i, group in enumerate(group_order):
+            if group in row_totals.index:
+                total = int(row_totals[group])
+                # Position the text slightly above the top of the bar
+                top_pos = bottom[i] + 1  # Add a small offset
+                ax.text(
+                    i, top_pos,
+                    f'n={total}',
+                    ha='center', va='bottom',
+                    fontweight='bold',
+                    fontsize=MEDIUM_SIZE
+                )
     
     # Customize the plot
     ax.spines['top'].set_visible(False)
@@ -484,6 +481,10 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
     plt.tight_layout()
     
     return fig, ax
+
+
+
+
 
 def create_sankey_diagram(df):
     """
