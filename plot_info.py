@@ -25,7 +25,7 @@ plt.rc('axes', titlesize=BIGGER_SIZE)
 plt.rc('axes', labelsize=MEDIUM_SIZE)
 plt.rc('xtick', labelsize=SMALL_SIZE)
 plt.rc('ytick', labelsize=SMALL_SIZE)
-plt.rc('legend', fontsize=SMALL_SIZE)
+plt.rc('legend', fontsize=MEDIUM_SIZE)
 plt.rc('figure', titlesize=BIGGER_SIZE)
 
 plt.rcParams['figure.dpi'] = 100
@@ -449,7 +449,7 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
     if use_expanded:
         title = title.replace('Assessment Type', 'Detailed Assessment Type')
     
-    ax.set_title(title, pad=20)
+    #ax.set_title(title, pad=20)
     ax.set_xlabel(x_label, labelpad=10)
     ax.set_ylabel(y_label, labelpad=10)
     
@@ -1593,4 +1593,49 @@ def create_author_reproducibility_scatter(
     return fig
 
 
+def create_author_metric(df, variable: str, other_col: dict = {}):
+    """
+    Generates a DataFrame containing aggregated metrics for authors based on a specified variable.
+    This function computes base metrics such as the count of major claims and unique articles 
+    for each author (or other grouping variable). It also calculates the distribution of 
+    assessment types and their proportions relative to the total number of major claims.
+    Args:
+        df (pd.DataFrame): The input DataFrame containing the data to be analyzed.
+        variable (str): The column name in the DataFrame to group by (e.g., author identifier).
+        other_col (dict): Additional aggregation operations to include in the base metrics.
+    Returns:
+        pd.DataFrame: A DataFrame containing the aggregated metrics, including:
+            - Base metrics: counts of major claims and unique articles.
+            - Assessment type counts: counts of each assessment type.
+            - Proportions: the proportion of each assessment type relative to the total major claims.
+
+    """
+
+    # Create base aggregation with name, counts, and article counts
+    author_base = df.groupby(variable).agg(**{
+        "Major claims":('id', 'count'),
+        "Articles":('article_id', 'nunique')
+        }, **other_col
+    )
+
+    # Create a cross-tabulation of first_author_key and assessment_type_grouped
+    assessment_counts = pd.crosstab(
+        df[variable], 
+        df['assessment_type_grouped']
+    )
+
+    # Make sure all assessment columns exist (some might be missing if no authors had that type)
+    for col in assessment_columns:
+        if col not in assessment_counts.columns:
+            assessment_counts[col] = 0
+
+    # Combine the base metrics with assessment counts
+    author_metrics = pd.concat([author_base, assessment_counts], axis=1)
+
+
+    for col in assessment_columns:
+        author_metrics[f'{col} prop'] = author_metrics[col] / author_metrics['Major claims']
+
+    author_metrics = author_metrics.reset_index()
+    return author_metrics
 
