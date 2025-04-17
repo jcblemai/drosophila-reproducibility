@@ -700,49 +700,7 @@ def create_sankey_diagram(df):
     return fig
 
 
-def prepare_categorical_variable_data(df, author_metrics, variable, key_col, assessment_columns):
-    """
-    Prepare data for categorical variable comparison plots.
-    
-    Parameters:
-    -----------
-    df : DataFrame
-        The original claims dataframe with all columns
-    author_metrics : DataFrame 
-        The author metrics dataframe with first_author_key as index
-    variable : str
-        The categorical variable column name to analyze
-    
-    Returns:
-    --------
-    DataFrame
-        Data prepared for plotting with the horizontal bar chart function
-    """
-    
-    # Get unique first author keys and their categorical variable values
-    author_variable_mapping = df[[key_col, variable]].drop_duplicates().set_index(key_col)
-    
-    # Merge the author metrics with the categorical variable values
-    combined_data = pd.merge(
-        author_metrics, 
-        author_variable_mapping, 
-        left_on=key_col, 
-        right_index=True,
-        how='left'
-    )
-    
-    # Group by the categorical variable
-    var_grouped = combined_data.groupby(variable).agg({
-        **{col: 'sum' for col in assessment_columns},
-        'Major claims': 'sum',
-        'Articles': 'sum',
-    })
-    
-    # Calculate proportions
-    for col in assessment_columns:
-        var_grouped[f'{col}_prop'] = var_grouped[col] / var_grouped['Major claims']
-    
-    return var_grouped
+
 
 def create_horizontal_bar_chart(var_grouped, title, labels, show_p_value=True):
     
@@ -895,7 +853,14 @@ def plot_author_irreproducibility_focused(
     # Create rank column (1-indexed)
     sorted_df['Rank'] = np.arange(1, len(sorted_df) + 1)
 
-    scatter_size = 10
+        # Add size legend
+    if "first_author_key" in df.columns:
+        sizes = [1, 3, 5, 10]
+        scatter_size = 25
+    else:
+        sizes = [5, 10, 20, 50]
+        scatter_size = 15
+    
     
     # Plot the distribution
     scatter = ax.scatter(
@@ -920,11 +885,9 @@ def plot_author_irreproducibility_focused(
     )
     
     # Add color bar
-    cbar = plt.colorbar(scatter, ax=ax)
+    cbar = plt.colorbar(scatter, ax=ax, shrink=0.6, pad=-0.12)
     cbar.set_label(f'{color_by}', fontweight='bold')
     
-    # Add size legend
-    sizes = [5, 10, 20, 50]
     for s in sizes:
         ax.scatter([], [], s=s*scatter_size, c='gray', alpha=0.7, edgecolors='white', linewidth=0.5,
                    label=f'{s} Claims')
@@ -942,12 +905,12 @@ def plot_author_irreproducibility_focused(
             bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8)
         )
     
-    # Add horizontal lines for reference
-    percentiles = [25, 50, 75]
-    for p in percentiles:
-        val = np.percentile(df['Challenged prop'], p)
-        ax.axhline(val, linestyle='--', color='gray', alpha=0.7,
-                label=f'{p}th Percentile: {val:.1%}')
+    ## Add horizontal lines for reference
+    #percentiles = [25, 50, 75]
+    #for p in percentiles:
+    #    val = np.percentile(df['Challenged prop'], p)
+    #    ax.axhline(val, linestyle='--', color='gray', alpha=0.7,
+    #            label=f'{p}th Percentile: {val:.1%}')
     
     # Set labels and title
     x_label = 'Author Rank'
@@ -975,7 +938,7 @@ def plot_author_irreproducibility_focused(
         fontsize=11, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
     # Add legend
-    ax.legend(title="Total Claims", loc='upper right', bbox_to_anchor=(0.98, 0.65))
+    ax.legend(title="Total Claims", loc='upper right', bbox_to_anchor=(0.80, 0.65))
     
     # Set y-axis to start at 0
     ax.set_ylim(0, None)
@@ -1405,9 +1368,7 @@ def create_publication_scatter(
     return fig, ax
 
 def create_author_reproducibility_scatter(
-    df, 
-    min_articles=3,
-    min_claims=5,
+    plot_df,
     annotate_top_n=10,
     title="Author Reproducibility Analysis",
     fig_size=(14, 12)
@@ -1435,8 +1396,8 @@ def create_author_reproducibility_scatter(
     --------
     fig : matplotlib Figure object
     """
-    # Filter data
-    plot_df = df[(df['Articles'] >= min_articles) & (df['Major claims'] >= min_claims)].copy()
+
+    size_mult = 40
     
     # Create figure with two subplots
     fig = plt.figure(figsize=fig_size)
@@ -1447,9 +1408,9 @@ def create_author_reproducibility_scatter(
     
     # Scatter plot for challenged vs unchallenged
     ax1.scatter(
-        plot_df['Unchallenged'], 
-        plot_df['Challenged'],
-        s=plot_df['Articles']*20,  # Size by number of articles
+        plot_df['Unchallenged prop'], 
+        plot_df['Challenged prop'],
+        s=plot_df['Articles']*size_mult,  # Size by number of articles
         c=plot_df['Verified']/plot_df['Major claims'],  # Color by verification rate
         cmap='viridis',
         alpha=0.7,
@@ -1459,12 +1420,12 @@ def create_author_reproducibility_scatter(
     
     # Annotate top authors
     # Top by challenged claims
-    top_authors = plot_df.sort_values(by='Challenged', ascending=False).head(annotate_top_n)
+    top_authors = plot_df.sort_values(by='Challenged prop', ascending=False).head(annotate_top_n)
     
     for _, row in top_authors.iterrows():
         ax1.annotate(
             row['Name'], 
-            xy=(row['Unchallenged'], row['Challenged']),
+            xy=(row['Unchallenged prop'], row['Challenged prop']),
             xytext=(5, 5),
             textcoords='offset points',
             fontsize=10,
@@ -1478,7 +1439,7 @@ def create_author_reproducibility_scatter(
     )
     
     # Plot regression line
-    x_line = np.linspace(0, plot_df['Unchallenged'].max()*1.1, 100)
+    x_line = np.linspace(0, plot_df['Unchallenged prop'].max()*1.1, 100)
     y_line = intercept + slope * x_line
     ax1.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
     
@@ -1490,8 +1451,8 @@ def create_author_reproducibility_scatter(
             bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.5'))
     
     # Customize plot
-    ax1.set_xlabel('Number of Unchallenged Claims', fontweight='bold')
-    ax1.set_ylabel('Number of Challenged Claims', fontweight='bold')
+    ax1.set_xlabel('Proportion of Unchallenged Claims', fontweight='bold')
+    ax1.set_ylabel('Proportion of Challenged Claims', fontweight='bold')
     ax1.set_title('Challenged vs. Unchallenged Claims by Author', fontweight='bold')
     ax1.grid(linestyle='--', alpha=0.3)
     ax1.set_axisbelow(True)
@@ -1518,7 +1479,7 @@ def create_author_reproducibility_scatter(
     scatter = ax2.scatter(
         plot_df['Articles'], 
         plot_df['pct_challenged'],
-        s=plot_df['Major claims']*2,  # Size by number of claims
+        s=plot_df['Major claims']*size_mult,  # Size by number of claims
         c=plot_df['Verified']/plot_df['Major claims'],  # Color by verification rate
         cmap='viridis',
         alpha=0.7,
@@ -1546,7 +1507,7 @@ def create_author_reproducibility_scatter(
     )
     
     # Plot regression line
-    x_line = np.linspace(min_articles, plot_df['Articles'].max()*1.1, 100)
+    x_line = np.linspace(0, plot_df['Articles'].max()*1.1, 100)
     y_line = intercept + slope * x_line
     ax2.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
     
@@ -1570,7 +1531,7 @@ def create_author_reproducibility_scatter(
     # Add size legend for second plot
     handles, labels = [], []
     for size in [5, 10, 20, 50]:
-        handles.append(plt.scatter([], [], s=size*2, color='gray', alpha=0.7))
+        handles.append(plt.scatter([], [], s=size*size_mult, color='gray', alpha=0.7))
         labels.append(f"{size}")
     legend = ax2.legend(
         handles, labels,
@@ -1591,51 +1552,4 @@ def create_author_reproducibility_scatter(
     plt.subplots_adjust(top=0.92, hspace=0.25)
     
     return fig
-
-
-def create_author_metric(df, variable: str, other_col: dict = {}):
-    """
-    Generates a DataFrame containing aggregated metrics for authors based on a specified variable.
-    This function computes base metrics such as the count of major claims and unique articles 
-    for each author (or other grouping variable). It also calculates the distribution of 
-    assessment types and their proportions relative to the total number of major claims.
-    Args:
-        df (pd.DataFrame): The input DataFrame containing the data to be analyzed.
-        variable (str): The column name in the DataFrame to group by (e.g., author identifier).
-        other_col (dict): Additional aggregation operations to include in the base metrics.
-    Returns:
-        pd.DataFrame: A DataFrame containing the aggregated metrics, including:
-            - Base metrics: counts of major claims and unique articles.
-            - Assessment type counts: counts of each assessment type.
-            - Proportions: the proportion of each assessment type relative to the total major claims.
-
-    """
-
-    # Create base aggregation with name, counts, and article counts
-    author_base = df.groupby(variable).agg(**{
-        "Major claims":('id', 'count'),
-        "Articles":('article_id', 'nunique')
-        }, **other_col
-    )
-
-    # Create a cross-tabulation of first_author_key and assessment_type_grouped
-    assessment_counts = pd.crosstab(
-        df[variable], 
-        df['assessment_type_grouped']
-    )
-
-    # Make sure all assessment columns exist (some might be missing if no authors had that type)
-    for col in assessment_columns:
-        if col not in assessment_counts.columns:
-            assessment_counts[col] = 0
-
-    # Combine the base metrics with assessment counts
-    author_metrics = pd.concat([author_base, assessment_counts], axis=1)
-
-
-    for col in assessment_columns:
-        author_metrics[f'{col} prop'] = author_metrics[col] / author_metrics['Major claims']
-
-    author_metrics = author_metrics.reset_index()
-    return author_metrics
 
