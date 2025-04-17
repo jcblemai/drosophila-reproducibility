@@ -702,7 +702,7 @@ def create_sankey_diagram(df):
 
 
 
-def create_horizontal_bar_chart(var_grouped, title, labels, show_p_value=True):
+def create_horizontal_bar_chart(var_grouped, title, labels, show_p_value=True, other_n={}):
     
     # Create figure
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -745,13 +745,27 @@ def create_horizontal_bar_chart(var_grouped, title, labels, show_p_value=True):
     
     # Add sample size as text to the right of each bar
     for i, lab in enumerate(var_grouped.index):
-        ax.text(1.02, i, f"n={var_grouped.loc[lab, 'Major claims']}", 
+        str_to_plot = f"N_claims={var_grouped.loc[lab, 'Major claims']}"
+        #for key, value in other_n.items():
+        #    str_to_plot += f"\nn_{key}={var_grouped.loc[lab, value]}"
+        ax.text(1.02, i, str_to_plot, 
                 ha='left', va='center', fontsize=12, color='black',
                 transform=ax.get_yaxis_transform())
     
     # Customize plot appearance
     ax.set_yticks(y)
-    ax.set_yticklabels(labels, 
+
+    new_labels = []
+
+    for i, lab in enumerate(var_grouped.index):
+        new_labels.append(labels[i])
+        for key, value in other_n.items():
+            print(labels[i])
+            print(var_grouped.loc[lab, value])
+            print(i)
+            new_labels[i] = labels[i] + f"\n(n={var_grouped.loc[lab, value]})"
+
+    ax.set_yticklabels(new_labels, 
                 fontweight='bold')
     ax.set_xlim(0, 1.05)  # Leave space for bar labels
     ax.set_xlabel('Proportion of Claims', fontweight='bold')
@@ -771,6 +785,7 @@ def create_horizontal_bar_chart(var_grouped, title, labels, show_p_value=True):
     
     # Add statistical annotation if requested
     if show_p_value:
+        raise ValueError("This function is not yet implemented")
         t_stat, p_val = stats.ttest_ind(
             df[df['Historical lab'] == True]['reproducibility_score'].dropna(),
             df[df['Historical lab'] == False]['reproducibility_score'].dropna(),
