@@ -1371,7 +1371,7 @@ def create_author_reproducibility_scatter(
     plot_df,
     annotate_top_n=10,
     title="Author Reproducibility Analysis",
-    fig_size=(14, 12)
+    fig_size=(10, 14)
 ):
     """
     Create a specialized scatter plot showing challenged vs. unchallenged claims by author,
@@ -1546,7 +1546,7 @@ def create_author_reproducibility_scatter(
     legend.get_title().set_fontweight('bold')
     
     # Add main title
-    fig.suptitle(title, fontsize=BIGGER_SIZE+2, fontweight='bold', y=0.98)
+    #fig.suptitle(title, fontsize=BIGGER_SIZE+2, fontweight='bold', y=0.98)
     
     plt.tight_layout()
     plt.subplots_adjust(top=0.92, hspace=0.25)
