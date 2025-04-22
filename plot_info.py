@@ -870,7 +870,7 @@ def plot_author_irreproducibility_focused(
 
         # Add size legend
     if "first_author_key" in df.columns:
-        sizes = [1, 3, 5, 10]
+        sizes = [6, 9, 12]
         scatter_size = 25
     else:
         sizes = [5, 10, 20, 50]
@@ -950,7 +950,7 @@ def plot_author_irreproducibility_focused(
     )
     
     ax.text(0.98, 0.98, stats_text, transform=ax.transAxes, ha='right', va='top',
-        fontsize=11, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+        fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
     # Add legend
     ax.legend(title="Total Claims", loc='upper right', bbox_to_anchor=(0.80, 0.65))
@@ -1030,10 +1030,10 @@ def plot_challenged_histogram(
         f"Median: {median_val:.1%}\n"
         f"Std Dev: {df[prop_column].std():.1%}\n"
         f"Authors with >20% Challenged: {(df[prop_column] > 0.2).sum()} ({(df[prop_column] > 0.2).sum()/len(df):.1%})"
-    )
+    ) 
     
     ax.text(0.98, 0.98, stats_text, transform=ax.transAxes, ha='right', va='top',
-           fontsize=11, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+           fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
     # Format axes
     ax.xaxis.set_major_formatter(PercentFormatter(1.0))
@@ -1101,38 +1101,56 @@ def plot_lorenz_curve(
     df = df.sort_values('contribution')
     
     # Recalculate cumulative authors and challenged proportions for the curve
-    df['lorenz_cum_authors'] = np.arange(1, len(df) + 1) / len(df)
+    df['lorenz_cum_authors'] = np.linspace(1/len(df), 1, len(df))
     df['lorenz_cum_challenged'] = df['contribution'].cumsum()
     
-    # Plot Lorenz curve
-    ax.plot(df['lorenz_cum_authors'], df['lorenz_cum_challenged'], color=color, linewidth=2.5)
+    # Plot Lorenz curve adding a 0
+    #ax.plot(df['lorenz_cum_authors'], df['lorenz_cum_challenged'], color=color, linewidth=2.5, marker='o')
+    ax.plot([0] + df['lorenz_cum_authors'].tolist(), [0] + df['lorenz_cum_challenged'].tolist(), 
+        color=color, linewidth=2.5, marker='o')
     
     # Plot perfect equality line
     ax.plot([0, 1], [0, 1], color='black', linestyle='--', label='Perfect Equality')
+
+    # Add shading between curve and equality line
+    x_vals = [0] + df['lorenz_cum_authors'].tolist()
+    y_vals = [0] + df['lorenz_cum_challenged'].tolist()
+    ax.fill_between(x_vals, y_vals, x_vals, color="gray", alpha=0.1)
     
     # Calculate Gini coefficient
     # Area between perfect equality line and Lorenz curve / area under perfect equality line
-    gini = 1 - np.sum((df['lorenz_cum_challenged'].shift(1, fill_value=0) + df['lorenz_cum_challenged']) * np.diff(np.append(0, df['lorenz_cum_authors'])))
+    gini = 1 - 2 * np.trapz(df['lorenz_cum_challenged'], df['lorenz_cum_authors'])
     
     # Add Gini coefficient as text
-    ax.text(0.98, 0.3, f"Gini Coefficient: {gini:.3f}", transform=ax.transAxes, ha='right',
-           fontsize=12, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+    ax.text(0.05, 0.75, f"Gini Coefficient: {gini:.3f}", transform=ax.transAxes, ha='left',
+           fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
-    # Get the stats for top contributors (from the descending sorted data)
-    # We need to get the stats from the original descending-sorted dataframe
-    top_10_pct = df.sort_values('contribution', ascending=False)['cum_challenged'].iloc[int(0.1*len(df))-1]
-    top_20_pct = df.sort_values('contribution', ascending=False)['cum_challenged'].iloc[int(0.2*len(df))-1]
-    top_50_pct = df.sort_values('contribution', ascending=False)['cum_challenged'].iloc[int(0.5*len(df))-1]
+    # Add cumulative contribution lines
+    n = len(df)
+    sorted_df = df.sort_values('contribution', ascending=False)
+    sorted_df['cum_contribution'] = sorted_df['contribution'].cumsum()
+
+    top_10_pct = sorted_df['cum_contribution'].iloc[int(0.1*n)-1] if int(0.1*n) > 0 else 0
+    top_20_pct = sorted_df['cum_contribution'].iloc[int(0.2*n)-1] if int(0.2*n) > 0 else 0
+    top_50_pct = sorted_df['cum_contribution'].iloc[int(0.5*n)-1] if int(0.5*n) > 0 else 0
     
     # Add more detailed statistics
     stats_text = (
-        f"Top 10% of authors account for: {top_10_pct:.1%} of challenged claims\n"
-        f"Top 20% of authors account for: {top_20_pct:.1%} of challenged claims\n"
-        f"Top 50% of authors account for: {top_50_pct:.1%} of challenged claims"
+        f"Top 10% of authors account for {top_10_pct:.1%} of challenged claims\n"
+        f"Top 20% of authors account for {top_20_pct:.1%} of challenged claims\n"
+        f"Top 50% of authors account for {top_50_pct:.1%} of challenged claims"
     )
+
+    for pct in [0.1, 0.2, 0.5]:
+        idx = min(int((1-pct) * len(df)), len(df)-1)
+        ax.scatter(df['lorenz_cum_authors'].iloc[idx], df['lorenz_cum_challenged'].iloc[idx], 
+                color='black', zorder=3, s=40)
+        ax.annotate(f"{pct:.0%}", 
+                (df['lorenz_cum_authors'].iloc[idx], df['lorenz_cum_challenged'].iloc[idx]),
+                xytext=(5, 5), textcoords='offset points', fontsize=12)
     
-    ax.text(0.98, 0.15, stats_text, transform=ax.transAxes, ha='right', va='top',
-           fontsize=11, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+    ax.text(0.05, 0.98, stats_text, transform=ax.transAxes, ha='left', va='top',
+           fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
     # Format axes
     ax.set_xlabel('Cumulative Proportion of Authors', fontweight='bold')

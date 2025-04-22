@@ -202,3 +202,279 @@ def deduplicate_by(df, col_name):
     return result_df
 
 
+def add_shangai_ranking(df):
+    df['shangai_ranking_2010'] = None
+    # Now update the rankings based on the affiliations
+    for idx, row in df.iterrows():
+        aff = row["primary_affiliation"]
+        if not pd.isna(aff):
+            # Set the ranking based on affiliation
+            if "Harvard" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 1
+            elif "Stockholm" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 79
+            elif "Tohoku" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 84
+            elif "Umea" in aff or "Umeå" in aff or "Umeâ" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif "Maryland" in aff and "College Park" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 36
+            elif "Worcester" in aff and "Massachusetts" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 101
+            elif "Washington" in aff and "Louis" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 30
+            elif "Uppsala" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 66
+            elif "Yonsei" in aff or "Notre Dame" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif "Petersburg" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 301
+            elif "Stanford" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 3
+            elif "La Jolla" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = None  # NA in original code
+            elif "California" in aff:
+                if "Davis" in aff:
+                    df.at[idx, 'shangai_ranking_2010'] = 46
+                elif "San Francisco" in aff:
+                    df.at[idx, 'shangai_ranking_2010'] = 18
+                elif "Berkeley" in aff:
+                    df.at[idx, 'shangai_ranking_2010'] = 2
+                elif "San Diego" in aff:
+                    df.at[idx, 'shangai_ranking_2010'] = 14
+                elif "Los Angeles" in aff:
+                    df.at[idx, 'shangai_ranking_2010'] = 13
+            elif "Cambridge" in aff and ("UK" in aff or "Kingdom" in aff):
+                df.at[idx, 'shangai_ranking_2010'] = 5
+            elif "Oxford" in aff and ("UK" in aff or "Kingdom" in aff):
+                df.at[idx, 'shangai_ranking_2010'] = 10
+            elif "University of Washington" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 16
+            elif "Yale" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 11
+            elif "University of Zürich" in aff or "Universität Zürich" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 51
+            elif "Glasgow" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 151
+            elif "Ohio University" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 401
+            elif "Kiel" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 151
+            elif "Texas" in aff and "A&M" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 95
+            elif "University College London" in aff or ("UCL" in aff and "London" in aff):
+                df.at[idx, 'shangai_ranking_2010'] = 21
+            elif "Northwestern" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 29
+            elif ("Zurich" in aff or "Zürich" in aff) and ("Federal Institute" in aff or "ETH" in aff):
+                df.at[idx, 'shangai_ranking_2010'] = 23
+            elif "Bonn" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 93
+            elif "Houston" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif "Jiao Tong" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif "Pennsylvania" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 15
+            elif "Rutgers" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 54
+            elif "Oulu" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 301
+            elif "Leuven" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 101
+            elif "Xiamen" in aff or "Pusan" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 401
+            elif "City University" in aff and "New York" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif "Lund" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 101
+            elif "Brown University" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 65
+            elif "University of Georgia" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 101
+            elif "Oregon State" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 101
+            elif "Canada" in aff and "Queen's" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif "University of Alberta" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 101
+            elif "University of Central Florida" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif "China Agricultural University" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 401
+            elif "Tel Aviv Uni" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 101
+            elif "Mount Sinai" in aff and "New York" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 151
+            elif "Cornell University" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 12
+            elif "McGill" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 61
+            elif "Université Libre de Bruxelles" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 101
+            elif "University of Birmingham" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 99
+            elif "Massachusetts Institute of Technology" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 4
+            elif "Kanazawa" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 301
+            elif "Tufts" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 101
+            elif "University of Wisconsin" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 17
+            elif "Illinois" in aff and "Urbana" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 25
+            elif "Illinois" in aff and "Chicago" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 151
+            elif "Sichuan" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 301
+            elif "University of Kentucky, Lexington" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif "University of Calgary" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 151
+            elif "University of Heidelberg" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 63
+            elif "Aberdeen" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif "Kansas State University" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 301
+            elif "Toulouse" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif "Universidad Autónoma" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif "Mayo" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 101
+            elif "Pohang" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 301
+            elif "University of Tokyo" in aff or "Tokyo University of Science" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 20
+            elif "Korea Advanced Institute of Science and Technology" in aff:
+                df.at[idx, 'shangai_ranking_2010'] = 201
+            elif ("CNRS" in aff or "Centre National" in aff or "National Research Council, Montreal" in aff or
+                "Tampere" in aff or "Ewha" in aff or "Novartis" in aff or
+                "EPFL" in aff or "Ecole Polytechnique Fédérale de Lausanne" in aff or "bioGUNE" in aff or 
+                "Institut de Biologie" in aff or "Justus Liebig University" in aff or
+                "Université Louis Pasteur" in aff or "Aichi Cancer Center Research Institute" in aff or
+                "Southern Methodist University" in aff or "Institute of Cancer Research" in aff or
+                "Sloan-Kettering Institute" in aff or "Memorial Sloan-Kettering" in aff or
+                "Hungarian" in aff or "Strasbourg" in aff or "Gutenberg" in aff or "DKFZ" in aff or
+                "University of Aveiro" in aff or "Hebrew University, Rehovot" in aff or
+                "Södertörns" in aff or "Whitehead" in aff or "Texas at El Paso" in aff or
+                "Howard Hughes" in aff or "Vari, Greece" in aff or "Brigham and Women" in aff or
+                "Borstel" in aff or "Osaka" in aff or "Children's Hospital" in aff or "Pasteur" in aff or
+                "Tokyo Metropolitan University" in aff or "assachusetts General Hospital" in aff or "Sogang University" in aff or 
+                "University of Modena and Reggio Emilia" in aff or "University of Missouri-Kansas" in aff or
+                ("CEA" in aff and "Grenoble" in aff) or "Commissariat à l'Energie Atomique" in aff or "Obihiro" in aff or "UMR INRA-UM2" in aff or
+                "National Institutes of Health" in aff or "Chinese Academy of Sciences" in aff or "Bohemia" in aff):
+                df.at[idx, 'shangai_ranking_2010'] = pd.NA
+    return df
+
+# # 2010 ranking: from my manual search, updated by claude above ^
+# for aff, cnt in major_claims_df["primary_affiliation"].value_counts().items():
+#     if "Harvard" in aff:# rank: 1
+#     elif "Stockholm" in aff:# rank: 79
+#     elif "Tohoku" in aff:# rank: 84
+#     elif "Umea" in aff or "Umeå" in aff or "Umeâ" in aff:# rank: 201
+#     elif "Maryland" in aff and "College Park" in aff:# rank: 36
+#     elif "Worcester" in aff and "Massachusetts" in aff:# rank: 101
+#     elif "Washington" in aff and "Louis" in aff:# rank: 30
+#     elif "Uppsala" in aff:# rank: 66
+#     elif "Yonsei" in aff or "Notre Dame" in aff:# rank: 201
+#     elif "Petersburg" in aff:# rank: 301
+#     elif "Stanford" in aff:# rank: 3
+#     elif "La Jolla" in aff:
+#             pass
+#             # rank: NA
+#     elif "California" in aff:
+#         if "Davis" in aff:
+#             pass
+#             # rank: 46
+#         elif "San Francisco" in aff:
+#             pass
+#             # rank: 18
+#         elif "Berkeley" in aff:
+#             pass
+#             # rank: 2
+#         elif "San Diego" in aff:
+#             pass
+#             # rank: 14
+#         elif "Los Angeles" in aff:
+#             pass
+#             # rank: 13
+#         
+#         else:
+#             print(f" {cnt:3}: {aff}")
+#     elif "Cambridge" in aff and ("UK" in aff or "Kingdom" in aff):# rank: 5
+#     elif "Oxford" in aff and ("UK" in aff or "Kingdom" in aff):# rank: 10
+#     elif "University of Washington" in aff:# rank: 16
+#     elif "Yale" in aff:# rank: 11
+#     elif "University of Zürich" in aff or "Universität Zürich" in aff:# rank: 51
+#     elif "Glasgow" in aff:# rank: 151
+#     elif "Ohio University" in aff:# rank: 401
+#     elif "Kiel" in aff:# rank: 151
+#     elif "Texas" in aff and "A&M" in aff:# rank: 95
+#     elif "University College London" in aff or ("UCL" in aff and "London" in aff):# rank: 21
+#     elif "Northwestern" in aff:# rank: 29
+#     elif ("Zurich" in aff or "Zürich") and ("Federal Institute" in aff or "ETH" in aff):# rank: 23
+#     elif "Bonn" in aff:# rank: 93
+#     elif "Houston" in aff:# rank: 201
+#     elif "Jiao Tong" in aff:# rank: 201
+#     elif "Pennsylvania" in aff:# rank: 15
+#     elif "Rutgers" in aff:# rank: 54
+#     elif "Oulu" in aff:# rank: 301
+#     elif "Leuven" in aff:# rank: 101
+#     elif "Xiamen" in aff or "Pusan" in aff:# rank: 401
+#     elif "City University" in aff and "New York" in aff:# rank: 201
+#     elif "Lund" in aff:# rank: 101
+#     elif "Brown University" in aff:# rank: 65
+#     elif "University of Georgia" in aff:# rank: 101
+#     elif "Oregon State"  in aff:# rank: 101
+#     elif "Canada" in aff and "Queen's" in aff:# rank: 201
+#     elif "University of Alberta" in aff:# rank: 101
+#     elif " University of Central Florida" in aff:# rank: 201
+#     elif "China Agricultural University" in aff:# rank: 401
+#     elif "Tel Aviv Uni" in aff:# rank: 101
+#     elif "Mount Sinai" in aff and "New York" in aff:# rank: 151
+#     elif "Cornell University" in aff:# rank: 12
+#     elif "McGill" in aff:# rank: 61
+#     elif "Université Libre de Bruxelles" in aff:# rank: 101
+#     elif "University of Birmingham" in aff:# rank: 99
+#     elif "Massachusetts Institute of Technology" in aff:# rank: 4
+#     elif "Kanazawa" in aff:# rank: 301
+#     elif "Tufts" in aff:# rank: 101
+#     elif "University of Wisconsin" in aff:# rank: 17
+#     elif "Illinois" in aff and "Urbana" in aff:# rank: 25
+#     elif "Illinois" in aff and "Chicago" in aff:# rank: 151
+#     elif "Sichuan" in aff:# rank: 301
+#     elif "University of Kentucky, Lexington" in aff:# rank: 201
+#     elif "University of Calgary" in aff:# rank: 151
+#     elif "University of Heidelberg" in aff:# rank: 63
+#     elif "Aberdeen" in aff:# rank: 201
+#     elif "Kansas State University" in aff:# rank: 301
+#     elif "Toulouse" in aff:# rank: 201
+#     elif "Universidad Autónoma" in aff:# rank: 201
+#     elif "Mayo" in aff:# rank: 101
+#     elif "Pohang" in aff:# rank: 301
+#     elif "University of Tokyo" in aff or "Tokyo University of Science" in aff:# rank: 20
+#     elif "Korea Advanced Institute of Science and Technology" in aff:# rank: 201
+#     elif ("CNRS" in aff or "Centre National" in aff or "National Research Council, Montreal" in aff or
+#         "Tampere" in aff or "Ewha" in aff or "Novartis" in aff or
+#         "EPFL" in aff or "Ecole Polytechnique Fédérale de Lausanne" in aff or "bioGUNE" in aff or 
+#         "Institut de Biologie" in aff or "Justus Liebig University" in aff or
+#         " Université Louis Pasteur" in aff or " Aichi Cancer Center Research Institute" in aff or
+#         "Southern Methodist University" in aff or "Institute of Cancer Research" in aff or
+#         "Sloan-Kettering Institute" in aff or "Memorial Sloan-Kettering" in aff or
+#         "Hungarian" in aff or "Strasbourg" in aff or "Gutenberg" in aff or "DKFZ" in aff or
+#         "University of Aveiro" in aff or "Hebrew University, Rehovot" in aff or
+#         "Södertörns" in aff or "Whitehead" in aff or "Texas at El Paso" in aff or
+#         "Howard Hughes" in aff or "Vari, Greece" in aff or "Brigham and Women" in aff or
+#         "Borstel" in aff or "Osaka" in aff or "Children's Hospital" in aff or "Pasteur" in aff or
+#         "Tokyo Metropolitan University" in aff or "assachusetts General Hospital" in aff or "Sogang University" in aff or 
+#         "University of Modena and Reggio Emilia" in aff or "University of Missouri-Kansas" in aff or
+#         ("CEA" in aff and "Grenoble" in aff) or "Commissariat à l'Energie Atomique" in aff or "Obihiro" in aff or "UMR INRA-UM2" in aff or
+#         "National Institutes of Health" in aff or "Chinese Academy of Sciences" in aff or "Bohemia" in aff):
+#         # rank: NA
+#         pass
+# 
+#     else:
+#         print(f" {cnt:3}: {aff}")
