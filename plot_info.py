@@ -1400,63 +1400,53 @@ def create_publication_scatter(
     
     return fig, ax
 
-def create_author_reproducibility_scatter(
+def create_challenged_vs_unchallenged_scatter(
     plot_df,
     annotate_top_n=10,
-    title="Author Reproducibility Analysis",
-    fig_size=(10, 14)
+    title="Challenged vs. Unchallenged Claims by Author",
+    fig_size=(10, 8),
+    size_mult=40
 ):
     """
-    Create a specialized scatter plot showing challenged vs. unchallenged claims by author,
-    and percentage of challenged claims vs. number of articles.
+    Create a scatter plot showing proportion of challenged vs. unchallenged claims by author.
     
     Parameters:
     -----------
-    df : pandas DataFrame
+    plot_df : pandas DataFrame
         The dataframe with author-level data
-    min_articles : int, default=3
-        Minimum number of articles for an author to be included
-    min_claims : int, default=5
-        Minimum number of claims for an author to be included
     annotate_top_n : int, default=10
-        Number of authors to annotate in each plot
-    title : str, default="Author Reproducibility Analysis"
-        Main title for the figure
-    fig_size : tuple, default=(14, 12)
+        Number of authors to annotate
+    title : str, default="Challenged vs. Unchallenged Claims by Author"
+        Plot title
+    fig_size : tuple, default=(10, 8)
         Figure size
+    size_mult : int, default=40
+        Multiplier for point sizes
         
     Returns:
     --------
-    fig : matplotlib Figure object
+    fig, ax : matplotlib Figure and Axes objects
     """
-
-    size_mult = 40
-    
-    # Create figure with two subplots
-    fig = plt.figure(figsize=fig_size)
-    gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1])
-    
-    # First subplot: Challenged claims vs Unchallenged claims
-    ax1 = fig.add_subplot(gs[0])
+    # Create figure
+    fig, ax = plt.subplots(figsize=fig_size)
     
     # Scatter plot for challenged vs unchallenged
-    ax1.scatter(
+    scatter = ax.scatter(
         plot_df['Unchallenged prop'], 
         plot_df['Challenged prop'],
         s=plot_df['Articles']*size_mult,  # Size by number of articles
         c=plot_df['Verified']/plot_df['Major claims'],  # Color by verification rate
-        cmap='viridis',
+        cmap='RdYlGn',
         alpha=0.7,
         edgecolors='white',
         linewidth=0.5
     )
     
     # Annotate top authors
-    # Top by challenged claims
     top_authors = plot_df.sort_values(by='Challenged prop', ascending=False).head(annotate_top_n)
     
     for _, row in top_authors.iterrows():
-        ax1.annotate(
+        ax.annotate(
             row['Name'], 
             xy=(row['Unchallenged prop'], row['Challenged prop']),
             xytext=(5, 5),
@@ -1468,65 +1458,108 @@ def create_author_reproducibility_scatter(
     
     # Calculate regression line
     slope, intercept, r_value, p_value, std_err = stats.linregress(
-        plot_df['Unchallenged'], plot_df['Challenged']
+        plot_df['Unchallenged prop'], plot_df['Challenged prop']
     )
     
     # Plot regression line
     x_line = np.linspace(0, plot_df['Unchallenged prop'].max()*1.1, 100)
     y_line = intercept + slope * x_line
-    ax1.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
+    ax.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
     
     # Add regression statistics
     stats_text = f"$r^2$ = {r_value**2:.3f}\n"
     stats_text += f"p = {p_value:.3e}" if p_value < 0.001 else f"p = {p_value:.3f}"
-    ax1.text(0.05, 0.95, stats_text, transform=ax1.transAxes, 
+    ax.text(0.05, 0.95, stats_text, transform=ax.transAxes, 
             va='top', ha='left', fontsize=12, 
             bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.5'))
     
     # Customize plot
-    ax1.set_xlabel('Proportion of Unchallenged Claims', fontweight='bold')
-    ax1.set_ylabel('Proportion of Challenged Claims', fontweight='bold')
-    ax1.set_title('Challenged vs. Unchallenged Claims by Author', fontweight='bold')
-    ax1.grid(linestyle='--', alpha=0.3)
-    ax1.set_axisbelow(True)
-    ax1.spines['top'].set_visible(False)
-    ax1.spines['right'].set_visible(False)
+    ax.set_xlabel('Proportion of Unchallenged Claims', fontweight='bold')
+    ax.set_ylabel('Proportion of Challenged Claims', fontweight='bold')
+    #ax.set_title(title, fontweight='bold')
+    ax.grid(linestyle='--', alpha=0.3)
+    ax.set_axisbelow(True)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     
-    # Add colorbar
-    cbar = plt.colorbar(
-        plt.cm.ScalarMappable(
-            norm=plt.Normalize(0, 1),
-            cmap='viridis'
-        ), 
-        ax=ax1
+    cbar = plt.colorbar(scatter, ax=ax, shrink=0.6, pad=0)
+    cbar.set_label(f'Proportion of Verified Claims', fontweight='bold')
+    
+    # Add size legend
+    handles, labels = [], []
+    if "first_author_key" in plot_df.columns:
+        sizes = [1, 2, 3, 5]
+    else:
+        sizes = [3, 6, 12, 30]
+    for size in sizes:
+        handles.append(plt.scatter([], [], s=size*size_mult, color='gray', alpha=0.7))
+        labels.append(f"{size}")
+    legend = ax.legend(
+        handles, labels,
+        title="Number of Articles",
+        loc='upper right',
+        #frameon=True,
+        framealpha=0.9,
+        edgecolor='lightgray',
+        handletextpad=2,
+        labelspacing=1
     )
-    cbar.set_label('Proportion of Verified Claims', fontweight='bold')
+    legend.get_title().set_fontweight('bold')
     
-    # Second subplot: % Challenged vs. Number of articles
-    ax2 = fig.add_subplot(gs[1])
+    plt.tight_layout()
     
-    # Calculate percentage of challenged claims
-    plot_df['pct_challenged'] = plot_df['Challenged'] / plot_df['Major claims']
+    return fig, ax
+
+
+def create_challenged_vs_articles_scatter(
+    plot_df,
+    annotate_top_n=10,
+    title="Proportion of Challenged Claims vs. Number of Articles",
+    fig_size=(10, 8),
+    size_mult=40
+):
+    """
+    Create a scatter plot showing proportion of challenged claims vs. number of articles.
+    
+    Parameters:
+    -----------
+    plot_df : pandas DataFrame
+        The dataframe with author-level data
+    annotate_top_n : int, default=10
+        Number of authors to annotate
+    title : str, default="Proportion of Challenged Claims vs. Number of Articles"
+        Plot title
+    fig_size : tuple, default=(10, 8)
+        Figure size
+    size_mult : int, default=40
+        Multiplier for point sizes
+        
+    Returns:
+    --------
+    fig, ax : matplotlib Figure and Axes objects
+    """
+    # Create figure
+    fig, ax = plt.subplots(figsize=fig_size)
     
     # Scatter plot
-    scatter = ax2.scatter(
+    scatter = ax.scatter(
         plot_df['Articles'], 
-        plot_df['pct_challenged'],
+        plot_df['Challenged prop'],
         s=plot_df['Major claims']*size_mult,  # Size by number of claims
         c=plot_df['Verified']/plot_df['Major claims'],  # Color by verification rate
-        cmap='viridis',
+        cmap='RdYlGn',
         alpha=0.7,
         edgecolors='white',
         linewidth=0.5
     )
     
     # Annotate top authors by percentage challenged
-    top_pct_authors = plot_df.sort_values(by='pct_challenged', ascending=False).head(annotate_top_n)
+    top_pct_authors = plot_df.sort_values(by='Challenged prop', ascending=False).head(annotate_top_n)
     
     for _, row in top_pct_authors.iterrows():
-        ax2.annotate(
+        ax.annotate(
             row['Name'], 
-            xy=(row['Articles'], row['pct_challenged']),
+            xy=(row['Articles'], row['Challenged prop']),
             xytext=(5, 5),
             textcoords='offset points',
             fontsize=10,
@@ -1536,41 +1569,58 @@ def create_author_reproducibility_scatter(
     
     # Calculate regression line
     slope, intercept, r_value, p_value, std_err = stats.linregress(
-        plot_df['Articles'], plot_df['pct_challenged']
+        plot_df['Articles'], plot_df['Challenged prop']
     )
     
     # Plot regression line
     x_line = np.linspace(0, plot_df['Articles'].max()*1.1, 100)
     y_line = intercept + slope * x_line
-    ax2.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
+    ax.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
     
     # Add regression statistics
     stats_text = f"$r^2$ = {r_value**2:.3f}\n"
     stats_text += f"p = {p_value:.3e}" if p_value < 0.001 else f"p = {p_value:.3f}"
-    ax2.text(0.05, 0.95, stats_text, transform=ax2.transAxes, 
+    ax.text(0.05, 0.95, stats_text, transform=ax.transAxes, 
             va='top', ha='left', fontsize=12, 
             bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.5'))
     
     # Customize plot
-    ax2.set_xlabel('Number of Articles', fontweight='bold')
-    ax2.set_ylabel('Proportion of Challenged Claims', fontweight='bold')
-    ax2.set_title('Proportion of Challenged Claims vs. Number of Articles', fontweight='bold')
-    ax2.yaxis.set_major_formatter(PercentFormatter(1.0))
-    ax2.grid(linestyle='--', alpha=0.3)
-    ax2.set_axisbelow(True)
-    ax2.spines['top'].set_visible(False)
-    ax2.spines['right'].set_visible(False)
+    ax.set_xlabel('Number of Articles', fontweight='bold')
+    ax.set_ylabel('Proportion of Challenged Claims', fontweight='bold')
+    #ax.set_title(title, fontweight='bold')
+    ax.yaxis.set_major_formatter(PercentFormatter(1.0))
+    ax.grid(linestyle='--', alpha=0.3)
+    ax.set_axisbelow(True)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
     
-    # Add size legend for second plot
+    ## Add colorbar
+    #cbar = plt.colorbar(
+    #    plt.cm.ScalarMappable(
+    #        norm=plt.Normalize(0, 1),
+    #        cmap='viridis'
+    #    ), 
+    #    ax=ax
+    #)
+    #cbar.set_label('Proportion of Verified Claims', fontweight='bold')
+
+    cbar = plt.colorbar(scatter, ax=ax, shrink=0.6, pad=0)
+    cbar.set_label(f'Proportion of Verified Claims', fontweight='bold')
+    
+    # Add size legend
     handles, labels = [], []
-    for size in [5, 10, 20, 50]:
+    if "first_author_key" in plot_df.columns:
+        sizes = [2, 4, 6, 10]
+    else:
+        sizes = [6, 12, 20, 30, 60]
+    for size in sizes:
         handles.append(plt.scatter([], [], s=size*size_mult, color='gray', alpha=0.7))
         labels.append(f"{size}")
-    legend = ax2.legend(
+    legend = ax.legend(
         handles, labels,
         title="Number of Claims",
         loc='upper right',
-        frameon=True,
+        #frameon=True,
         framealpha=0.9,
         edgecolor='lightgray',
         handletextpad=2,
@@ -1578,11 +1628,6 @@ def create_author_reproducibility_scatter(
     )
     legend.get_title().set_fontweight('bold')
     
-    # Add main title
-    #fig.suptitle(title, fontsize=BIGGER_SIZE+2, fontweight='bold', y=0.98)
-    
     plt.tight_layout()
-    plt.subplots_adjust(top=0.92, hspace=0.25)
     
-    return fig
-
+    return fig, ax
