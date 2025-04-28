@@ -1364,7 +1364,7 @@ def create_publication_scatter(
     # Add size legend if using size variable
     if size_var is not None and not isinstance(scaled_sizes, int):
         # Create a separate axis for size legend
-        ax_legend = fig.add_axes([0.85, 0.15, 0.1, 0.2])
+        ax_legend = fig.add_axes([0.15, 0.55, 0.1, 0.2])
         ax_legend.axis('off')
         
         # Get values for legend
