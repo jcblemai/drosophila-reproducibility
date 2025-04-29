@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -16,101 +15,58 @@
 # ---
 
 # %%
-from statsmodels.stats.proportion import proportion_confint
-
-from statsmodels.stats.proportion import proportion_confint
-from statsmodels.stats.contingency_tables import Table2x2
-import scipy.stats as stats
-
-def report_categorical_comparison(var_grouped, labels, outcome='Challenged', alpha=0.05, what_str=""):
-    """
-    Full report comparing two groups: proportions with CI, OR with CI, and Fisher p-value.
-    
-    Args:
-        var_grouped (DataFrame): Table with counts per group.
-        labels (list): Names of the two groups [group1, group2].
-        outcome (str): Column for outcome count, e.g., 'Challenged'.
-        alpha (float): Significance level (default 0.05).
-        
-    Returns:
-        str: Formatted professional sentence.
-        dict: Summary results for export.
-    """
-    group1, group2 = labels
-    group1_challenged = var_grouped.loc[group1, f'{outcome}']
-    group1_total = var_grouped.loc[group1, 'Major claims']
-    group2_challenged = var_grouped.loc[group2, f'{outcome}']
-    group2_total = var_grouped.loc[group2, 'Major claims']
-    
-    # Contingency table
-    table = [[group1_challenged, group1_total - group1_challenged],
-             [group2_challenged, group2_total - group2_challenged]]
-    
-    # Wilson confidence intervals
-    group1_prop = group1_challenged / group1_total
-    group2_prop = group2_challenged / group2_total
-    ci1_low, ci1_upp = proportion_confint(group1_challenged, group1_total, alpha=1-alpha, method='wilson')
-    ci2_low, ci2_upp = proportion_confint(group2_challenged, group2_total, alpha=1-alpha, method='wilson')
-    
-    # Odds Ratio and Fisher p-value
-    ct = Table2x2(table)
-    or_estimate = ct.oddsratio
-    ci_low, ci_upp = ct.oddsratio_confint()
-    _, p_value = stats.fisher_exact(table)
-    
-    # If OR < 1, flip groups to make OR > 1 for clarity (optional)
-    if or_estimate < 1:
-        group1, group2 = group2, group1
-        group1_prop, group2_prop = group2_prop, group1_prop
-        ci1_low, ci1_upp, ci2_low, ci2_upp = ci2_low, ci2_upp, ci1_low, ci1_upp
-        or_estimate = 1 / or_estimate
-        ci_low, ci_upp = 1/ci_upp, 1/ci_low
-
-    significance = "not significantly associated with" if p_value > alpha else "significantly associated with"
-    group1_str = str(labels[0]).lower()
-    group2_str = str(labels[1]).lower()
-    sentence = (f"{what_str} {group1_str} vs {group2_str} was {significance} claim reproducibility "
-                f"(p = {p_value:.2f});\n  {group1_prop*100:.1f}% (95% CI {ci1_low*100:.1f}–{ci1_upp*100:.1f}%) vs "
-                f"{group2_prop*100:.1f}% (95% CI {ci2_low*100:.1f}–{ci2_upp*100:.1f}%) of claims were challenged "
-                f"for {group1} vs {group2}, respectively. \n Odds Ratio = {or_estimate:.2f} (95% CI {ci_low:.2f}–{ci_upp:.2f}).")
-    
-    # Return sentence and dictionary for export
-    summary = {
-        'Group1': group1,
-        'Group2': group2,
-        'Group1 Challenged % (95% CI)': f"{group1_prop*100:.1f}% ({ci1_low*100:.1f}–{ci1_upp*100:.1f}%)",
-        'Group2 Challenged % (95% CI)': f"{group2_prop*100:.1f}% ({ci2_low*100:.1f}–{ci2_upp*100:.1f}%)",
-        'Odds Ratio': round(or_estimate, 2),
-        'OR 95% CI': f"{ci_low:.2f}–{ci_upp:.2f}",
-        'Fisher p-value': round(p_value, 3),
-        'Significance': significance
-    }
-    
-    return sentence, summary
-
-def report_proportion(successes, total, confidence=0.95, end_sentence="of tested claims were irreproducible."):
-    """
-    Report a proportion with a Wilson score confidence interval.
-    
-    Args:
-        successes (int): Number of successes/events (e.g., challenged claims).
-        total (int): Total number of trials (e.g., total claims).
-        confidence (float): Confidence level, default 0.95.
-        
-    Returns:
-        str: Formatted sentence.
-    """
-    prop = successes / total
-    ci_low, ci_upp = proportion_confint(count=successes, nobs=total, alpha=1-confidence, method='wilson')
-    
-    prop_percent = round(100 * prop)
-    ci_low_percent = round(100 * ci_low)
-    ci_upp_percent = round(100 * ci_upp)
-    
-    return f"{prop_percent}% (95% CI: {ci_low_percent}%–{ci_upp_percent}%) {end_sentence}"
-
+import stat_lib
+import pandas as pd
 # Example usage
-print(report_proportion(38, 45))
+print(stat_lib.report_proportion(38, 45))
 
 # %%
-# proportion_confint?
+first_author_claims = pd.read_csv("preprocessed_data/first_author_claims.csv")
+leading_author_claims = pd.read_csv("preprocessed_data/leading_author_claims.csv")
+
+# %%
+all_covar = pd.merge(first_author_claims, leading_author_claims, how="left", left_on="id", right_on="id", suffixes=("_fh", "_lh"))
+all_covar.columns
+
+# %%
+all_covar["challenged_flag"] = all_covar["assessment_type_grouped_fh"] == "Challenged"
+
+# %%
+
+effect = [
+    #["scale", "shangai_ranking_2010_lh"],
+    ["scale", "year_fh"],
+    ["C", "Sex_lh"],
+    ["C", "Sex_fh"],
+]
+
+fixed = [f"{e[0]}({e[1]})" for e in effect]
+
+
+cols = [e[1] for e in effect]
+
+print(all_covar[cols + ['challenged_flag']].describe(include='all'))
+print(all_covar[cols + ['challenged_flag']].isna().sum())
+
+
+# %%
+
+# ------------- frequentist quick check -----------------
+glm_res = stat_lib.fit_glm_cluster(all_covar, fixed, cluster_cols=('author_key_lh', 'author_key_fh'))
+print(glm_res.summary())
+import numpy as np
+# Nicely formatted OR table
+or_table = (glm_res
+            .params
+            .apply(lambda b: (pd.Series({'OR':  np.exp(b)})))
+            .join(glm_res.conf_int().apply(np.exp))
+            .rename(columns={0: 'CI_low', 1: 'CI_high'}))
+print("\nAdjusted Odds Ratios\n", or_table)
+
+# ------------- full Bayesian mixed model ---------------
+model, idata = stat_lib.fit_bayesian_mixed(all_covar, fixed)
+print(model.summary(idata, hdi=0.95))
+
+# e.g. plot forest of fixed effects
+import arviz as az
+az.plot_forest(idata, filter_vars="like", kind='forest', combined=True);
