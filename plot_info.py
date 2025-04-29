@@ -618,7 +618,7 @@ def create_sankey_diagram(df):
                     value.append(count)
                     
                     # Use blue for the reproduction subcategory
-                    if subcategory_name == 'Selected for manual reproduction':
+                    if False: #subcategory_name == 'Selected for manual reproduction':
                         node_colors.append(reproduction_color)
                         link_colors.append(hex_to_rgba(reproduction_color))
                     else:
@@ -675,7 +675,7 @@ def create_sankey_diagram(df):
             thickness = 20,
             line = dict(color = "black", width = 0.5),
             label = node_labels,
-            color = node_colors
+            color = node_colors,
         ),
         link = dict(
             source = source,
@@ -689,7 +689,7 @@ def create_sankey_diagram(df):
     fig.update_layout(
         title_text="Claims Assessment Flow",
         title_font_size=20,
-        font_size=14,
+        font_size=18,
         height=800,
         width=1200,
         showlegend=False,
