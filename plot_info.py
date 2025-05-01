@@ -702,17 +702,34 @@ def create_sankey_diagram(df):
 
 
 
-def create_horizontal_bar_chart(var_grouped, title, labels, show_p_value=True, other_n={}):
+def create_horizontal_bar_chart(var_grouped, title, labels_map=None, show_p_value=True, other_n={}):
+    """
+    Create a horizontal stacked bar chart for assessment categories.
+    
+    Parameters:
+    - var_grouped: DataFrame with grouped data (index are the groups to plot).
+    - title: Title for the plot.
+    - labels_map: dict mapping each index value in var_grouped to the desired y-axis label.
+                  If None, the index values themselves are used as labels.
+    - show_p_value: Whether to show statistical annotation (not implemented).
+    - other_n: dict of {key: column_name} to append sample size info to labels.
+    Returns:
+    - fig, ax: Matplotlib Figure and Axes.
+    """
     
     # Create figure
     fig, ax = plt.subplots(figsize=(12, 6))
     
-    # Data for stacking
-    categories = ['Verified', 'Partially Verified', 'Unchallenged', 'Mixed', 'Challenged']
     categories = ASSESSMENT_ORDER
     data = []
     for cat in categories:
         data.append(var_grouped[f'{cat}_prop'].values)
+
+    # Reorder var_grouped to match labels_map order if labels_map is provided
+    if labels_map is not None:
+        ordered_index = reversed([k for k in labels_map.keys() if k in var_grouped.index])
+        var_grouped = var_grouped.loc[ordered_index]
+
     
     # Create stacked bars horizontally
     y = np.arange(len(var_grouped.index))
@@ -756,15 +773,11 @@ def create_horizontal_bar_chart(var_grouped, title, labels, show_p_value=True, o
     ax.set_yticks(y)
 
     new_labels = []
-
-    for i, lab in enumerate(var_grouped.index):
-        new_labels.append(labels[i])
+    for lab in var_grouped.index:
+        base_label = labels_map.get(lab, str(lab)) if labels_map else str(lab)
         for key, value in other_n.items():
-            print(labels[i])
-            print(var_grouped.loc[lab, value])
-            print(i)
-            new_labels[i] = labels[i] + f"\n(n={var_grouped.loc[lab, value]})"
-
+            base_label += f"\n(n={var_grouped.loc[lab, value]})"
+        new_labels.append(base_label)
     ax.set_yticklabels(new_labels, 
                 fontweight='bold')
     ax.set_xlim(0, 1.05)  # Leave space for bar labels
@@ -834,7 +847,8 @@ def plot_author_irreproducibility_focused(
     fig_size=(10, 8),
     color_by='Unchallenged prop',
     cmap='viridis',
-    most_challenged_on_right=True
+    most_challenged_on_right=True,
+    name_col='Name',
 ):
     """
     Create a more focused Figure 4A showing the distribution of irreproducibility.
@@ -911,7 +925,7 @@ def plot_author_irreproducibility_focused(
     top_authors = sorted_df.head(5)
     for _, row in top_authors.iterrows():
         ax.annotate(
-            row['Name'],
+            row[name_col],
             xy=(row['Rank'], row['Challenged prop']),
             xytext=(5, 5),
             textcoords='offset points',
@@ -1192,7 +1206,8 @@ def create_publication_scatter(
     y_label=None,
     annotate_top_n=5,
     show_regression=True,
-    fig_size=(12, 10)
+    fig_size=(12, 10),
+    name_col='Name',
 ):
     """
     Create a publication-ready scatter plot for reproducibility analysis.
@@ -1330,13 +1345,13 @@ def create_publication_scatter(
                    bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.5'))
     
     # Annotate top points
-    if annotate_top_n > 0 and 'Name' in plot_df.columns:
+    if annotate_top_n > 0:
         # Sort by y_var and get top N authors
         top_authors = plot_df.sort_values(by=y_var, ascending=False).head(annotate_top_n)
         
         for _, row in top_authors.iterrows():
             ax.annotate(
-                row['Name'], 
+                row[name_col], 
                 xy=(row[x_var], row[y_var]),
                 xytext=(5, 5),
                 textcoords='offset points',
@@ -1405,7 +1420,8 @@ def create_challenged_vs_unchallenged_scatter(
     annotate_top_n=10,
     title="Challenged vs. Unchallenged Claims by Author",
     fig_size=(10, 8),
-    size_mult=40
+    size_mult=40,
+    name_col='Name'
 ):
     """
     Create a scatter plot showing proportion of challenged vs. unchallenged claims by author.
@@ -1447,7 +1463,7 @@ def create_challenged_vs_unchallenged_scatter(
     
     for _, row in top_authors.iterrows():
         ax.annotate(
-            row['Name'], 
+            row[name_col], 
             xy=(row['Unchallenged prop'], row['Challenged prop']),
             xytext=(5, 5),
             textcoords='offset points',
@@ -1516,7 +1532,8 @@ def create_challenged_vs_articles_scatter(
     annotate_top_n=10,
     title="Proportion of Challenged Claims vs. Number of Articles",
     fig_size=(10, 8),
-    size_mult=40
+    size_mult=40,
+    name_col='Name'
 ):
     """
     Create a scatter plot showing proportion of challenged claims vs. number of articles.
@@ -1558,7 +1575,7 @@ def create_challenged_vs_articles_scatter(
     
     for _, row in top_pct_authors.iterrows():
         ax.annotate(
-            row['Name'], 
+            row[name_col], 
             xy=(row['Articles'], row['Challenged prop']),
             xytext=(5, 5),
             textcoords='offset points',

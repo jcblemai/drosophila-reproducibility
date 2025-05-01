@@ -25,19 +25,21 @@ first_author_claims = pd.read_csv("preprocessed_data/first_author_claims.csv")
 leading_author_claims = pd.read_csv("preprocessed_data/leading_author_claims.csv")
 
 # %%
-all_covar = pd.merge(first_author_claims, leading_author_claims, how="left", left_on="id", right_on="id", suffixes=("_fh", "_lh"))
+all_covar = pd.merge(first_author_claims, leading_author_claims, how="left", left_on="id", right_on="id", suffixes=("", "_lh"))
+all_covar = all_covar.drop(all_covar.filter(regex='_lh$').columns, axis=1)
+
 all_covar.columns
 
 # %%
-all_covar["challenged_flag"] = all_covar["assessment_type_grouped_fh"] == "Challenged"
+all_covar["challenged_flag"] = all_covar["assessment_type_grouped"] == "Challenged"
 
 # %%
 
 effect = [
     #["scale", "shangai_ranking_2010_lh"],
-    ["scale", "year_fh"],
-    ["C", "Sex_lh"],
-    ["C", "Sex_fh"],
+    ["scale", "year"],
+    ["C", "Sex"],
+    ["C", "sex"],
 ]
 
 fixed = [f"{e[0]}({e[1]})" for e in effect]
