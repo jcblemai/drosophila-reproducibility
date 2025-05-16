@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # ---
 # jupyter:
 #   jupytext:
@@ -17,6 +18,7 @@
 # %%
 import stat_lib
 import pandas as pd
+import matplotlib.pyplot as plt
 # Example usage
 print(stat_lib.report_proportion(38, 45))
 
@@ -34,12 +36,15 @@ all_covar.columns
 all_covar["challenged_flag"] = all_covar["assessment_type_grouped"] == "Challenged"
 
 # %%
+# replace all space by underscore in column names
+all_covar.columns = all_covar.columns.str.replace(' ', '_')
+
+# %%
 
 effect = [
     #["scale", "shangai_ranking_2010_lh"],
     ["scale", "year"],
-    ["C", "Sex"],
-    ["C", "sex"],
+    ["C", "Leading_Author_Sex"],
 ]
 
 fixed = [f"{e[0]}({e[1]})" for e in effect]
@@ -52,9 +57,12 @@ print(all_covar[cols + ['challenged_flag']].isna().sum())
 
 
 # %%
+fixed
+
+# %%
 
 # ------------- frequentist quick check -----------------
-glm_res = stat_lib.fit_glm_cluster(all_covar, fixed, cluster_cols=('author_key_lh', 'author_key_fh'))
+glm_res = stat_lib.fit_glm_cluster(all_covar, fixed, cluster_cols=('first_author_key', 'leading_author_key'))
 print(glm_res.summary())
 import numpy as np
 # Nicely formatted OR table
@@ -65,10 +73,14 @@ or_table = (glm_res
             .rename(columns={0: 'CI_low', 1: 'CI_high'}))
 print("\nAdjusted Odds Ratios\n", or_table)
 
-# ------------- full Bayesian mixed model ---------------
-model, idata = stat_lib.fit_bayesian_mixed(all_covar, fixed)
-print(model.summary(idata, hdi=0.95))
 
-# e.g. plot forest of fixed effects
-import arviz as az
-az.plot_forest(idata, filter_vars="like", kind='forest', combined=True);
+# %%
+glm_res.summary2()
+
+# %%
+or_tbl = stat_lib.tidy_glm_or_table(glm_res)
+print(or_tbl)
+
+# 2) forest plot
+stat_lib.forest_plot(glm_res, title="Figure X – Adjusted ORs for claim irreproducibility");
+plt.show()

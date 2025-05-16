@@ -16,7 +16,7 @@ import statsmodels.api as sm
 from statsmodels.genmod.families import Binomial
 
 def fit_glm_cluster(df, fixed_effects, outcome='challenged_flag',
-                    cluster_cols=('first_author_id', 'last_author_id')):
+                    cluster_cols=('first_author_key', 'leading_author_key')):
     import numpy as np
     import pandas as pd
     import patsy
@@ -48,14 +48,20 @@ def fit_glm_cluster(df, fixed_effects, outcome='challenged_flag',
     y, X = patsy.dmatrices(formula, df_clean, return_type='dataframe')
 
     # 5. -------- fit GLM with cluster-robust SE -------------
-    clusters = df_clean[list(cluster_cols)].apply(tuple, axis=1)
-    model = sm.GLM(y, X, family=Binomial()).fit(cov_type='cluster',
-                                                cov_kwds={'groups': clusters})
+    clusters = (
+        df_clean[list(cluster_cols)]
+        .astype(str)                      # cast every element to string
+        .fillna("NA")                     # replace nan -> "NA"
+        .agg("__".join, axis=1)           # join into one string label
+    )
+    model = sm.GLM(y, X, family=Binomial()).fit(
+                cov_type='cluster',
+                cov_kwds={'groups': clusters})
     return model
 
 # ---------- Bayesian hierarchical via Bambi / PyMC ----
 def fit_bayesian_mixed(df, fixed_effects, outcome='challenged_flag',
-                       group_first='first_author_id', group_last='last_author_id',
+                       group_first='first_author_key', group_last='leading_author_key',
                        draws=2000, tune=1000, cores=4, seed=42):
     """
     Logistic mixed model with random intercepts for first & last author.
@@ -158,4 +164,67 @@ def report_categorical_comparison(var_grouped, labels, outcome='Challenged', alp
     
     return sentence, summary
 
+# ---------------  stats_model_viz.py  -----------------
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 
+def tidy_glm_or_table(glm_res, drop_intercept=True, digits=2):
+    """
+    Return a dataframe of coefficients, ORs, CIs and p-values.
+
+    Parameters
+    ----------
+    glm_res : statsmodels GLMResults
+    drop_intercept : bool
+    digits : int        # rounding for display
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+    table = (glm_res.params
+             .to_frame("coef")
+             .join(glm_res.conf_int().rename(columns={0: "ci_low", 1: "ci_high"}))
+             .join(glm_res.pvalues.to_frame("pval")))
+
+    table["OR"]       = np.exp(table["coef"])
+    table["OR_low"]   = np.exp(table["ci_low"])
+    table["OR_high"]  = np.exp(table["ci_high"])
+
+    if drop_intercept:
+        table = table.loc[~table.index.str.contains("Intercept")]
+
+    return (table[["OR","OR_low","OR_high","pval"]]
+            .round(digits)
+            .sort_values("OR", ascending=False))
+
+
+def forest_plot(glm_res, title="Adjusted odds ratios", ax=None,
+                figsize=None, drop_intercept=True, c="black"):
+    """
+    Draw a horizontal forest plot of ORs with 95 % CIs.
+
+    Returns
+    -------
+    ax  (matplotlib Axes)
+    """
+    tbl = tidy_glm_or_table(glm_res, drop_intercept=drop_intercept, digits=3)
+    if figsize is None:
+        figsize = (6, 0.5 + 0.4 * len(tbl))
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+
+    y = np.arange(len(tbl))[::-1]           # top-to-bottom
+    ax.hlines(y, tbl["OR_low"], tbl["OR_high"], color=c, lw=2)
+    ax.scatter(tbl["OR"], y, color=c, s=45, zorder=5)
+
+    ax.axvline(1, color="grey", ls="--", lw=1)
+    ax.set_xscale("log")
+    ax.set_xlabel("Odds ratio (log scale)")
+    ax.set_yticks(y)
+    ax.set_yticklabels(tbl.index)
+    ax.set_title(title)
+    plt.tight_layout()
+    return ax

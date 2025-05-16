@@ -728,9 +728,12 @@ def create_horizontal_bar_chart(var_grouped, title, labels_map=None, show_p_valu
     # Reorder var_grouped to match labels_map order if labels_map is provided
     if labels_map is not None:
         ordered_index = reversed([k for k in labels_map.keys() if k in var_grouped.index])
-        var_grouped = var_grouped.loc[ordered_index]
-
-    
+        var_grouped = var_grouped.reindex(ordered_index)
+    print('.' * 20)
+    print(var_grouped)
+    print('.' * 20)
+    print(var_grouped.index)
+    print('.' * 20)
     # Create stacked bars horizontally
     y = np.arange(len(var_grouped.index))
     left = np.zeros(len(var_grouped.index))
@@ -740,6 +743,7 @@ def create_horizontal_bar_chart(var_grouped, title, labels_map=None, show_p_valu
         color = to_rgba(ASSESSMENT_COLORS[category], alpha=0.9)
         bar = ax.barh(y, data[i], left=left, label=category, 
                     color=color, edgecolor='white', linewidth=0.5)
+        print(left, data[i])
         left += data[i]
         bars.append(bar)
     
