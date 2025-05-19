@@ -672,7 +672,7 @@ def create_sankey_diagram(df):
     fig = go.Figure(data=[go.Sankey(
         node = dict(
             pad = 15,
-            thickness = 20,
+            thickness = 14,
             line = dict(color = "black", width = 0.5),
             label = node_labels,
             color = node_colors,
@@ -697,6 +697,225 @@ def create_sankey_diagram(df):
         paper_bgcolor='white'
     )
     
+    return fig
+
+
+# New: Three-layer Sankey diagram for claim assessment flow
+def create_sankey_diagram2(df):
+    """
+    Build a three‑layer Sankey diagram that:
+      • starts from “All Major Claims”,
+      • shows detailed assessment categories in the first layer, and
+      • collapses them into the final outcomes Verified / Challenged / Unchallenged.
+
+    Layer 0 (root)
+    └── “All Major Claims”
+
+    Layer 1 (detailed leaves)
+        – Verified in literature                (green)
+        – Verified by same authors              (green)
+        – Unchallenged, logically inconsistent  (grey)
+        – Unchallenged, logically consistent    (grey)
+        – Unchallenged                          (grey)
+        – Selected for manual reproduction      (grey)  → splits later
+        – Challenged in literature              (red)
+        – Challenged by same authors            (red)
+        – Partially Verified                    (yellow)
+        – Mixed                                 (orange)
+
+    Layer 2 (collapsed outcomes)
+        – Verified     (green)
+        – Challenged   (red)
+        – Unchallenged (grey)
+
+    The “Selected for manual reproduction” node splits into
+    “Verified” and “Challenged” according to the experimental
+    outcomes of the reproducibility project.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        Must contain a column ``assessment_type`` with the
+        detailed labels used in the ReproSci database.
+
+    Returns
+    -------
+    fig : plotly.graph_objects.Figure
+    """
+    import plotly.graph_objects as go
+
+    # ---------- helpers -------------------------------------------------
+    def _cnt(labels):
+        "Count rows whose assessment_type is in *labels*."
+        return int(df["assessment_type"].isin(labels).sum())
+
+    # ---------- raw counts ----------------------------------------------
+    verified_lit              = _cnt(["Verified"])
+    verified_same             = _cnt(["Verified by same authors"])
+    unchall_consistent        = _cnt(["Unchallenged, logically consistent"])
+    unchall_inconsistent      = _cnt(["Unchallenged, logically inconsistent"])
+    unchall_general           = _cnt(["Unchallenged"])
+    verified_repro            = _cnt(["Verified by reproducibility project"])
+    challenged_repro          = _cnt(["Challenged by reproducibility project"])
+    challenged_lit            = _cnt(["Challenged"])
+    challenged_same           = _cnt(["Challenged by same authors"])
+    partially_verified        = _cnt(["Partially verified"])
+    mixed_cnt                 = _cnt(["Mixed"])
+
+    selected_total            = verified_repro + challenged_repro
+    total_claims = (
+        verified_lit + verified_same
+        + unchall_consistent + unchall_inconsistent + unchall_general
+        + selected_total
+        + challenged_lit + challenged_same
+        + partially_verified + mixed_cnt
+    )
+
+    # ---------- node bookkeeping ----------------------------------------
+    nodes, node_labels, node_colors = [], [], []
+    source, target, value = [], [], []
+
+    # root ---------------------------------------------------------------
+    nodes.append("All Major Claims")
+    node_labels.append(f"All Major Claims ({total_claims})")
+    node_colors.append("#2c3e50")        # dark slate
+    root_idx = 0
+
+    # first‑layer specification -----------------------------------------
+    first_layer_spec = [
+        ("Verified in literature",             verified_lit,       ASSESSMENT_COLORS["Verified"]),
+        ("Verified by same authors",           verified_same,      ASSESSMENT_COLORS["Verified"]),
+        ("Unchallenged, logically inconsistent", unchall_inconsistent, ASSESSMENT_COLORS["Unchallenged"]),
+        ("Unchallenged, logically consistent",   unchall_consistent,   ASSESSMENT_COLORS["Unchallenged"]),
+        ("Unchallenged",                          unchall_general,     ASSESSMENT_COLORS["Unchallenged"]),
+        ("Unchallenged selected for manual reproduction", selected_total,      adjust_color(ASSESSMENT_COLORS["Unchallenged"], 0.85)),
+        ("Challenged in literature",             challenged_lit,      ASSESSMENT_COLORS["Challenged"]),
+        ("Challenged by same authors",           challenged_same,     ASSESSMENT_COLORS["Challenged"]),
+        ("Partially Verified",                  partially_verified,  ASSESSMENT_COLORS["Partially Verified"]),
+        ("Mixed",                               mixed_cnt,          ASSESSMENT_COLORS["Mixed"]),
+    ]
+
+    first_layer_idx = {}
+    for name, cnt, col in first_layer_spec:
+        if cnt == 0:
+            continue
+        idx = len(nodes)
+        first_layer_idx[name] = idx
+        nodes.append(name)
+        node_labels.append(f"{name} ({cnt})")
+        node_colors.append(col)
+        source.append(root_idx)
+        target.append(idx)
+        value.append(cnt)
+
+    # outcome layer ------------------------------------------------------
+    # totals for each final outcome
+    verified_total     = verified_lit + verified_same + verified_repro
+    challenged_total   = challenged_lit + challenged_same + challenged_repro
+    unchallenged_total = unchall_inconsistent + unchall_consistent + unchall_general
+
+    outcome_spec = [
+        ("Verified",     verified_total,     ASSESSMENT_COLORS["Verified"]),
+        ("Challenged",   challenged_total,   ASSESSMENT_COLORS["Challenged"]),
+        ("Unchallenged", unchallenged_total, ASSESSMENT_COLORS["Unchallenged"]),
+    ]
+    outcome_idx = {}
+    for name, total_cnt, col in outcome_spec:
+        idx = len(nodes)
+        outcome_idx[name] = idx
+        nodes.append(name)
+        node_labels.append(f"{name} ({total_cnt})")
+        node_colors.append(col)
+
+    # helper to add links ------------------------------------------------
+    def _link(src_name, dst_name, cnt):
+        if cnt == 0:
+            return
+        source.append(first_layer_idx[src_name])
+        target.append(outcome_idx[dst_name])
+        value.append(cnt)
+
+    # verified flows (literature + same authors)
+    _link("Verified in literature", "Verified", verified_lit)
+    _link("Verified by same authors", "Verified", verified_same)
+
+    # challenged flows (literature + same authors)
+    _link("Challenged in literature", "Challenged", challenged_lit)
+    _link("Challenged by same authors", "Challenged", challenged_same)
+
+    # ── reproducibility‑project branch ────────────────────────────────
+    selected_idx = first_layer_idx.get("Unchallenged selected for manual reproduction")
+
+    if selected_idx is not None:
+        # ▸ Verified by repro project
+        if verified_repro > 0:
+            ver_r_idx = len(nodes)
+            nodes.append("Verified by ReproSci project")
+            node_labels.append(f"Verified by ReproSci project ({verified_repro})")
+            node_colors.append(ASSESSMENT_COLORS["Verified"])
+
+            # selected → verified‑repro
+            source.append(selected_idx)
+            target.append(ver_r_idx)
+            value.append(verified_repro)
+
+            # verified‑repro → outcome Verified
+            source.append(ver_r_idx)
+            target.append(outcome_idx["Verified"])
+            value.append(verified_repro)
+
+        # ▸ Challenged by repro project
+        if challenged_repro > 0:
+            chal_r_idx = len(nodes)
+            nodes.append("Challenged by ReproSci project")
+            node_labels.append(f"Challenged by ReproSci project ({challenged_repro})")
+            node_colors.append(ASSESSMENT_COLORS["Challenged"])
+
+            # selected → challenged‑repro
+            source.append(selected_idx)
+            target.append(chal_r_idx)
+            value.append(challenged_repro)
+
+            # challenged‑repro → outcome Challenged
+            source.append(chal_r_idx)
+            target.append(outcome_idx["Challenged"])
+            value.append(challenged_repro)
+
+    # unchallenged flows
+    _link("Unchallenged, logically inconsistent", "Unchallenged", unchall_inconsistent)
+    _link("Unchallenged, logically consistent",   "Unchallenged", unchall_consistent)
+    _link("Unchallenged",                         "Unchallenged", unchall_general)
+
+    # colour each link with its destination node colour
+    link_colors = [hex_to_rgba(node_colors[t]) for t in target]
+
+    # build figure -------------------------------------------------------
+    fig = go.Figure(go.Sankey(
+        node = dict(
+            pad = 40,
+            thickness = 22,
+            label = node_labels,
+            color = node_colors,
+            line  = dict(color="black", width=0.4),
+        ),
+        link = dict(
+            source = source,
+            target = target,
+            value  = value,
+            color  = link_colors,
+        )
+    ))
+
+    fig.update_layout(
+        title_text="",
+        font_size=22,
+        height=800,
+        width=2000,
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        showlegend=False,
+    )
+
     return fig
 
 

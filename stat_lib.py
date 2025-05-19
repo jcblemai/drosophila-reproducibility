@@ -7,21 +7,12 @@ import patsy
 import statsmodels.api as sm
 from statsmodels.genmod.generalized_linear_model import GLM
 from statsmodels.genmod.families import Binomial
+import bambi as bmb
+import matplotlib.pyplot as plt
 
 # ---------- frequentist (cluster-robust) -------------
-import numpy as np
-import pandas as pd
-import patsy
-import statsmodels.api as sm
-from statsmodels.genmod.families import Binomial
-
 def fit_glm_cluster(df, fixed_effects, outcome='challenged_flag',
                     cluster_cols=('first_author_key', 'leading_author_key')):
-    import numpy as np
-    import pandas as pd
-    import patsy
-    import statsmodels.api as sm
-    from statsmodels.genmod.families import Binomial
 
     # 1. -------- collect raw variable names -----------------
     needed_cols = {outcome}
@@ -38,10 +29,11 @@ def fit_glm_cluster(df, fixed_effects, outcome='challenged_flag',
     if missing:
         raise KeyError(f"Missing columns in dataframe: {missing}")
 
-    # 3. -------- drop rows with NA only on those -------------
-    df_clean = df.dropna(subset=needed_cols)
-    if df_clean.empty:
-        raise ValueError("No rows left after dropping NAs – check missingness.")
+    ## 3. -------- drop rows with NA only on those -------------
+    df_clean = df.copy()
+    #df_clean = df.dropna(subset=needed_cols)
+    #if df_clean.empty:
+    #    raise ValueError("No rows left after dropping NAs – check missingness.")
 
     # 4. -------- build formula & design matrices ------------
     formula = outcome + ' ~ ' + ' + '.join(fixed_effects)
@@ -67,7 +59,7 @@ def fit_bayesian_mixed(df, fixed_effects, outcome='challenged_flag',
     Logistic mixed model with random intercepts for first & last author.
     Requires bambi (PyMC).  Returns the fitted model and the InferenceData.
     """
-    import bambi as bmb
+    
 
     fixed_formula = ' + '.join(fixed_effects) if fixed_effects else '1'
     formula = f"{outcome} ~ {fixed_formula} + (1|{group_first}) + (1|{group_last})"
@@ -164,10 +156,6 @@ def report_categorical_comparison(var_grouped, labels, outcome='Challenged', alp
     
     return sentence, summary
 
-# ---------------  stats_model_viz.py  -----------------
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 
 def tidy_glm_or_table(glm_res, drop_intercept=True, digits=2):
     """
