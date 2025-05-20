@@ -205,7 +205,7 @@ def adjust_color(hex_color, factor=0.8):
     
     return f'#{r:02x}{g:02x}{b:02x}'
 
-def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=False):
+def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=False, ax=None):
     """
     Create a stacked bar plot of major claims.
     
@@ -299,8 +299,11 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
         standard_plot_data = standard_pct
 
     
-    # Create figure
-    fig, ax = plt.subplots(figsize=(12, 8))
+    # Create / reuse axes ------------------------------------------------
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(12, 8))
+    else:
+        fig = ax.figure
     
     # Initialize bottom positions for stacking bars
     bottom = np.zeros(len(detailed_plot_data))
@@ -409,10 +412,11 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
                             i, center_pos,
                             label_text,
                             ha='center', va='center',
-                            color='white', fontweight='bold'
+                            color='white', fontweight='bold',
+                            fontsize=SMALL_SIZE
                         )
                         text.set_path_effects([withStroke(linewidth=3, foreground='black')])
-    
+
         # Add total counts at the top of each column
         for i, group in enumerate(group_order):
             if group in row_totals.index:
@@ -423,7 +427,7 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
                     i, top_pos,
                     f'n={total}',
                     ha='center', va='bottom',
-                    fontweight='bold',
+                    fontweight='normal',
                     fontsize=MEDIUM_SIZE
                 )
     
@@ -438,7 +442,7 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
         y_label = 'Number of Claims'
         title_prefix = ''
     else:
-        y_label = 'Percentage of Claims'
+        y_label = '% of Claims'
         title_prefix = 'Distribution of '
     
     if by_time:
@@ -921,142 +925,221 @@ def create_sankey_diagram2(df):
 
 
 
-def create_horizontal_bar_chart(var_grouped, title, labels_map=None, show_p_value=True, other_n={}):
+def create_horizontal_bar_chart(
+    var_grouped,
+    title,
+    labels_map=None,
+    show_p_value=True,
+    other_n={},
+    ax=None,
+    orientation="horizontal",
+    pct_axis_label="% of Claims",
+    group_axis_label=None
+):
     """
-    Create a horizontal stacked bar chart for assessment categories.
-    
-    Parameters:
-    - var_grouped: DataFrame with grouped data (index are the groups to plot).
-    - title: Title for the plot.
-    - labels_map: dict mapping each index value in var_grouped to the desired y-axis label.
-                  If None, the index values themselves are used as labels.
-    - show_p_value: Whether to show statistical annotation (not implemented).
-    - other_n: dict of {key: column_name} to append sample size info to labels.
-    Returns:
-    - fig, ax: Matplotlib Figure and Axes.
-    """
-    
-    # Create figure
-    fig, ax = plt.subplots(figsize=(12, 6))
-    
-    categories = ASSESSMENT_ORDER
-    data = []
-    for cat in categories:
-        data.append(var_grouped[f'{cat}_prop'].values)
+    Stacked bar chart of assessment categories, horizontal (default) or vertical.
 
-    # Reorder var_grouped to match labels_map order if labels_map is provided
+    Parameters
+    ----------
+    var_grouped : DataFrame
+        Index provides the groups to plot; columns like ``Challenged_prop`` etc.
+    title : str
+        Figure title.
+    labels_map : dict or None
+        Mapping from index values → pretty labels for the group axis.
+    show_p_value : bool
+        Placeholder for future statistical annotation (not yet implemented).
+    other_n : dict
+        {key: column_name} pairs whose sample sizes are appended to group labels.
+    ax : matplotlib.axes.Axes or None
+        Draw on this axes if provided; otherwise create a new figure.
+    orientation : {"horizontal", "vertical"}
+        Plot bars horizontally (previous behaviour) or vertically.
+    pct_axis_label : str
+        Label for the percentage axis.
+    group_axis_label : str or None
+        Label for the categorical axis (y-axis in horizontal, x-axis in vertical).
+
+    Returns
+    -------
+    fig, ax : Matplotlib figure and axes.
+    """
+    if orientation not in ("horizontal", "vertical"):
+        raise ValueError("orientation must be 'horizontal' or 'vertical'")
+
+    # ------------------------------------------------------------------
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(12, 6))
+    else:
+        fig = ax.figure
+
+
+    # Re‑order rows if a label map is given
     if labels_map is not None:
-        ordered_index = reversed([k for k in labels_map.keys() if k in var_grouped.index])
+        # default to the *insertion order* of labels_map keys
+        ordered_index = [k for k in labels_map if k in var_grouped.index]
         var_grouped = var_grouped.reindex(ordered_index)
-    print('.' * 20)
-    print(var_grouped)
-    print('.' * 20)
-    print(var_grouped.index)
-    print('.' * 20)
-    # Create stacked bars horizontally
-    y = np.arange(len(var_grouped.index))
-    left = np.zeros(len(var_grouped.index))
-    bars = []
-    
-    for i, category in enumerate(categories):
-        color = to_rgba(ASSESSMENT_COLORS[category], alpha=0.9)
-        bar = ax.barh(y, data[i], left=left, label=category, 
-                    color=color, edgecolor='white', linewidth=0.5)
-        print(left, data[i])
-        left += data[i]
-        bars.append(bar)
-    
-    # Add data labels to each segment
-    for i, bar_group in enumerate(bars):
-        for j, rect in enumerate(bar_group):
-            width = rect.get_width()
-            if width > 0.02:  # Only add label if segment is large enough
-                # Position text in center of bar segment
-                x_pos = rect.get_x() + width/2
-                
-                # Format percentage with proper precision
-                text = ax.text(x_pos, rect.get_y() + rect.get_height()/2.,
-                        f'{width:.0%}' if width >= 0.1 else f'{width:.1%}', 
-                        ha='center', va='center', 
-                        fontsize=12, fontweight='bold', color='white')
-                
-                # Add stroke effect for better readability
-                text.set_path_effects([withStroke(linewidth=3, foreground='black', alpha=0.7)])
-    
-    # Add sample size as text to the right of each bar
-    for i, lab in enumerate(var_grouped.index):
-        str_to_plot = f"N_claims={var_grouped.loc[lab, 'Major claims']}"
-        #for key, value in other_n.items():
-        #    str_to_plot += f"\nn_{key}={var_grouped.loc[lab, value]}"
-        ax.text(1.02, i, str_to_plot, 
-                ha='left', va='center', fontsize=12, color='black',
-                transform=ax.get_yaxis_transform())
-    
-    # Customize plot appearance
-    ax.set_yticks(y)
 
+    # After any explicit re‑ordering, build the data matrix so that
+    # numeric rows correspond one‑to‑one with var_grouped.index
+    categories = ASSESSMENT_ORDER
+    data = [var_grouped[f"{cat}_prop"].values for cat in categories]
+
+    # ──────────────────────────────────────────────────────────────────
+    if orientation == "horizontal":
+        y = np.arange(len(var_grouped.index))
+        left = np.zeros(len(var_grouped.index))
+        bars = []
+
+        for i, category in enumerate(categories):
+            color = to_rgba(ASSESSMENT_COLORS[category], alpha=0.9)
+            bar = ax.barh(
+                y,
+                data[i],
+                left=left,
+                label=category,
+                color=color,
+                edgecolor="white",
+                linewidth=0.5,
+            )
+            left += data[i]
+            bars.append(bar)
+
+        # Data labels
+        for bar_group in bars:
+            for rect in bar_group:
+                width = rect.get_width()
+                if width > 0.02:
+                    x_pos = rect.get_x() + width / 2
+                    ax.text(
+                        x_pos,
+                        rect.get_y() + rect.get_height() / 2.0,
+                        f"{width:.0%}" if width >= 0.1 else f"{width:.1%}",
+                        ha="center",
+                        va="center",
+                        fontsize=12,
+                        fontweight="bold",
+                        color="white",
+                    ).set_path_effects([withStroke(linewidth=3, foreground="black", alpha=0.7)])
+
+        # Sample‑size text
+        for i, lab in enumerate(var_grouped.index):
+            sample_txt = f"n={var_grouped.loc[lab,'Major claims']}"
+            ax.text(
+                1.02,
+                i,
+                sample_txt,
+                ha="left",
+                va="center",
+                fontsize=MEDIUM_SIZE, fontweight='normal',
+                transform=ax.get_yaxis_transform(),
+            )
+
+        ax.set_yticks(y)
+
+    # ──────────────────────────────────────────────────────────────────
+    else:  # vertical
+        x = np.arange(len(var_grouped.index))
+        bottom = np.zeros(len(var_grouped.index))
+        bars = []
+
+        for i, category in enumerate(categories):
+            color = to_rgba(ASSESSMENT_COLORS[category], alpha=0.9)
+            bar = ax.bar(
+                x,
+                data[i],
+                bottom=bottom,
+                label=category,
+                color=color,
+                edgecolor="white",
+                linewidth=0.5,
+            )
+            bottom += data[i]
+            bars.append(bar)
+
+        # Data labels
+        for bar_group in bars:
+            for rect in bar_group:
+                height = rect.get_height()
+                if height > 0.02:
+                    y_pos = rect.get_y() + height / 2
+                    ax.text(
+                        rect.get_x() + rect.get_width() / 2,
+                        y_pos,
+                        f"{height:.0%}" if height >= 0.1 else f"{height:.1%}",
+                        ha="center",
+                        va="center",
+                        fontsize=12,
+                        fontweight="bold",
+                        color="white",
+                    ).set_path_effects([withStroke(linewidth=3, foreground="black", alpha=0.7)])
+
+        # Sample‑size text above bars
+        for i, lab in enumerate(var_grouped.index):
+            sample_txt = f"n={var_grouped.loc[lab,'Major claims']}"
+            ax.text(
+                i,
+                1.02,
+                sample_txt,
+                ha="center",
+                va="bottom",
+                fontsize=MEDIUM_SIZE, fontweight='normal',
+                transform=ax.get_xaxis_transform(),
+            )
+
+        ax.set_xticks(x)
+
+    # ──────────────────────────────────────────────────────────────────
+    # Build group labels (shared code)
     new_labels = []
     for lab in var_grouped.index:
         base_label = labels_map.get(lab, str(lab)) if labels_map else str(lab)
         for key, value in other_n.items():
             base_label += f"\n(n={var_grouped.loc[lab, value]})"
         new_labels.append(base_label)
-    ax.set_yticklabels(new_labels, 
-                fontweight='bold')
-    ax.set_xlim(0, 1.05)  # Leave space for bar labels
-    ax.set_xlabel('Proportion of Claims', fontweight='bold')
-    ax.set_title(title, 
-                 fontweight='bold', pad=20)
-    
-    # Improve x-axis formatting (as percentages)
-    ax.xaxis.set_major_formatter(mpl.ticker.PercentFormatter(1.0))
-    
-    # Customize grid
-    ax.grid(axis='x', linestyle='--', alpha=0.3)
+
+    if orientation == "horizontal":
+        ax.set_yticklabels(new_labels, fontweight="bold")
+        ax.set_xlim(0, 1.0)
+        ax.set_xlabel(pct_axis_label, fontweight="bold")
+        if group_axis_label is not None:
+            ax.set_ylabel(group_axis_label, fontweight="normal")
+    else:
+        ax.set_xticklabels(new_labels, fontweight="normal", rotation=0, ha="center")
+        ax.set_ylim(0, 1.0)
+        ax.set_ylabel(pct_axis_label, fontweight="normal")
+
+    # Common styling
+    ax.set_title(title, fontweight="bold", pad=20)
+
+    if orientation == "horizontal":
+        ax.xaxis.set_major_formatter(mpl.ticker.PercentFormatter(1.0))
+    else:  # vertical -> percentages are on y‑axis
+        ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1.0))
+
+    ax.grid(axis="both", linestyle="--", alpha=0.3)
     ax.set_axisbelow(True)
-    
-    # Enhance spines
-    for spine in ['top', 'right']:
+    for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
-    
-    # Add statistical annotation if requested
-    if show_p_value:
-        raise ValueError("This function is not yet implemented")
-        t_stat, p_val = stats.ttest_ind(
-            df[df['Historical lab'] == True]['reproducibility_score'].dropna(),
-            df[df['Historical lab'] == False]['reproducibility_score'].dropna(),
-            equal_var=False
-        )
-        
-        # Format p-value with appropriate notation
-        if p_val < 0.001:
-            p_text = "p < 0.001***"
-        elif p_val < 0.01:
-            p_text = f"p = {p_val:.3f}**"
-        elif p_val < 0.05:
-            p_text = f"p = {p_val:.3f}*"
-        else:
-            p_text = f"p = {p_val:.3f} (ns)"
-        
-        # Add t-test result above the plot
-        ax.text(0.5, 1.00, f"Reproducibility score comparison: t = {t_stat:.2f}, {p_text}", 
-              ha='center', transform=ax.transAxes, fontsize=12, fontweight='bold')
-    
-    # Add legend with improved positioning and appearance
+
+    # Legend
     legend = ax.legend(
         title="Assessment Category",
-        loc='upper center',
-        bbox_to_anchor=(0.5, -0.15),
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.15) if orientation == "horizontal" else (1.02, 1),
         frameon=True,
         framealpha=0.9,
-        edgecolor='lightgray',
-        ncol=len(categories)
+        edgecolor="lightgray",
+        ncol=len(categories) if orientation == "horizontal" else 1,
     )
-    legend.get_title().set_fontweight('bold')
-    
-    # Tight layout for better use of space
+    legend.get_title().set_fontweight("bold")
+
+    # Add x-axis label for vertical orientation
+    if orientation == "vertical":
+        label = group_axis_label if group_axis_label is not None else "Institution Shanghai ranking"
+        ax.set_xlabel(label, fontweight="normal")
+
     plt.tight_layout()
-    
     return fig, ax
 
 
@@ -1072,6 +1155,7 @@ def plot_author_irreproducibility_focused(
     cmap='viridis',
     most_challenged_on_right=True,
     name_col='Name',
+    ax=None
 ):
     """
     Create a more focused Figure 4A showing the distribution of irreproducibility.
@@ -1095,8 +1179,11 @@ def plot_author_irreproducibility_focused(
     --------
     fig, ax : matplotlib Figure and Axes objects
     """
-    # Create a figure with one main plot
-    fig, ax = plt.subplots(figsize=fig_size)
+    # Create / reuse axes ------------------------------------------------
+    if ax is None:
+        fig, ax = plt.subplots(figsize=fig_size)
+    else:
+        fig = ax.figure
     
     # Sort authors by challenged proportion
     sorting_col = 'Challenged prop'
@@ -1215,7 +1302,8 @@ def plot_challenged_histogram(
     prop_column='Challenged prop',
     title="Distribution of Challenged Claims Across First Authors",
     fig_size=(10, 6),
-    color='#e74c3c'
+    color='#e74c3c',
+    ax=None
 ):
     """
     Create a histogram with KDE showing the distribution of challenged claim proportions.
@@ -1237,7 +1325,10 @@ def plot_challenged_histogram(
     --------
     fig, ax : matplotlib Figure and Axes objects
     """
-    fig, ax = plt.subplots(figsize=fig_size)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=fig_size)
+    else:
+        fig = ax.figure
     
     # Create histogram with KDE
     sns.histplot(
@@ -1295,7 +1386,8 @@ def plot_lorenz_curve(
     weight_column='Major claims',
     title="Distribution Inequality of Challenged Claims",
     fig_size=(10, 6),
-    color='#e74c3c'
+    color='#e74c3c',
+    ax=None
 ):
     """
     Create a Lorenz curve to visualize inequality in the distribution of challenged claims.
@@ -1320,7 +1412,10 @@ def plot_lorenz_curve(
     --------
     fig, ax : matplotlib Figure and Axes objects
     """
-    fig, ax = plt.subplots(figsize=fig_size)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=fig_size)
+    else:
+        fig = ax.figure
     
     # Calculate contribution of each author to total challenged claims
     df = df.copy()
@@ -1431,6 +1526,7 @@ def create_publication_scatter(
     show_regression=True,
     fig_size=(12, 10),
     name_col='Name',
+    ax=None
 ):
     """
     Create a publication-ready scatter plot for reproducibility analysis.
@@ -1478,8 +1574,10 @@ def create_publication_scatter(
     else:
         plot_df = df.copy()
     
-    # Create figure and axis
-    fig, ax = plt.subplots(figsize=fig_size)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=fig_size)
+    else:
+        fig = ax.figure
     
     # Prepare data
     x_data = plot_df[x_var]
@@ -1644,7 +1742,8 @@ def create_challenged_vs_unchallenged_scatter(
     title="Challenged vs. Unchallenged Claims by Author",
     fig_size=(10, 8),
     size_mult=40,
-    name_col='Name'
+    name_col='Name',
+    ax=None
 ):
     """
     Create a scatter plot showing proportion of challenged vs. unchallenged claims by author.
@@ -1666,8 +1765,10 @@ def create_challenged_vs_unchallenged_scatter(
     --------
     fig, ax : matplotlib Figure and Axes objects
     """
-    # Create figure
-    fig, ax = plt.subplots(figsize=fig_size)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=fig_size)
+    else:
+        fig = ax.figure
     
     # Scatter plot for challenged vs unchallenged
     scatter = ax.scatter(
@@ -1756,7 +1857,8 @@ def create_challenged_vs_articles_scatter(
     title="Proportion of Challenged Claims vs. Number of Articles",
     fig_size=(10, 8),
     size_mult=40,
-    name_col='Name'
+    name_col='Name',
+    ax=None
 ):
     """
     Create a scatter plot showing proportion of challenged claims vs. number of articles.
@@ -1778,8 +1880,10 @@ def create_challenged_vs_articles_scatter(
     --------
     fig, ax : matplotlib Figure and Axes objects
     """
-    # Create figure
-    fig, ax = plt.subplots(figsize=fig_size)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=fig_size)
+    else:
+        fig = ax.figure
     
     # Scatter plot
     scatter = ax.scatter(
