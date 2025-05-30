@@ -974,11 +974,12 @@ def create_horizontal_bar_chart(
         fig = ax.figure
 
 
-    # Re‑order rows if a label map is given
+    # Safe row ordering
+# ------------------------------------------------------------------
+    # If labels_map is provided, re-index rows to follow the key order.
     if labels_map is not None:
-        # default to the *insertion order* of labels_map keys
-        ordered_index = [k for k in labels_map if k in var_grouped.index]
-        var_grouped = var_grouped.reindex(ordered_index)
+        ordered_index = [k for k in labels_map.keys() if k in var_grouped.index]
+        var_grouped = var_grouped.loc[ordered_index]
 
     # After any explicit re‑ordering, build the data matrix so that
     # numeric rows correspond one‑to‑one with var_grouped.index
