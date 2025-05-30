@@ -318,7 +318,7 @@ gs5  = gridspec.GridSpec(
     width_ratios=[0.25, 0.75],
     height_ratios=[0.5, 0.5],
     wspace=0.25,
-    hspace=0.25
+    hspace=0.5
 )
 
 # Panel‑A axis (top‑left)
@@ -404,7 +404,7 @@ plot_info.create_challenged_vs_articles_scatter(
     name_col='First Author Name',
     ax=axC
 )
-axC.set_title("C", loc="left", fontweight="bold", fontsize=24)
+axC.set_title("C", loc="left", fontweight="bold", fontsize=24, x=-0.1, y=1.05)
 
 # Unified legend in upper-right of panel A
 fig5.axes[1].legend(
