@@ -476,3 +476,170 @@ plt.tight_layout()
 plt.show()
 
 
+# %% [markdown]
+# ### Figure 6 – Gini (A) and Distribution (B) for leading authors
+
+# %%
+import matplotlib.gridspec as gridspec
+from plot_info import MEDIUM_SIZE
+
+# Filter identical to standalone plots (≥ 2 articles & ≥ 6 major claims)
+to_plot_lead = author_metrics.copy()
+to_plot_lead = to_plot_lead[(to_plot_lead["Articles"] >= 2) &
+                            (to_plot_lead["Major claims"] >= 6)]
+
+fig6 = plt.figure(figsize=(18, 6))
+gs6  = gridspec.GridSpec(1, 2, width_ratios=[1, 1], wspace=0.15)
+
+ax6A = fig6.add_subplot(gs6[0])   # A – Lorenz / Gini
+ax6B = fig6.add_subplot(gs6[1])   # B – distribution scatter
+
+# Panel A: Lorenz curve + Gini
+plot_info.plot_lorenz_curve(
+    to_plot_lead,
+    prop_column="Challenged prop",
+    weight_column="Major claims",
+    title="",
+    ax=ax6A,
+)
+ax6A.set_title("A", loc="left", fontweight="bold", fontsize=28)
+
+# Panel B: distribution scatter
+plot_info.plot_author_irreproducibility_focused(
+    to_plot_lead,
+    title="",
+    color_by="Verified prop",
+    cmap="RdYlGn",
+    most_challenged_on_right=True,
+    name_col="Leading Author Name",
+    ax=ax6B,
+)
+ax6B.set_title("B", loc="left", fontweight="bold", fontsize=28)
+
+# Unify legend (take from panel B)
+lg6 = ax6B.get_legend()
+handles6, labels6 = lg6.legend_handles, [t.get_text() for t in lg6.get_texts()]
+lg6.remove()
+
+ax6A.legend(
+    handles6,
+    labels6,
+    loc="upper right",
+    frameon=True,
+    ncol=1,
+    fontsize=MEDIUM_SIZE,
+)
+
+fig6.tight_layout()
+fig6.savefig("figures/fig6_AB_leading_author_horizontal.png",
+             dpi=300,
+             bbox_inches="tight")
+print("Saved → figures/fig6_AB_leading_author_horizontal.png")
+
+ # %% [markdown]
+# ### Figure 7 – Leading-author characteristics (A–C)
+
+# %%
+import matplotlib.gridspec as gridspec
+from plot_info import MEDIUM_SIZE
+
+# ── choose the two categorical variables for A & B ─────────────────────
+varA = "Leading Author Sex"
+varB = "Junior Senior"
+
+label_mapA = None                                  # default labels
+label_mapB = all_categorical_variables[varB]["labels"]
+
+# ----------------------------------------------------------------------
+# Prepare grouped data for each variable (identical to earlier loops)
+def _make_group(var, lbl_map):
+    g = wrangling.create_author_metric(
+        claim_df=leading_author_claims,
+        variable=var,
+        other_col={"n_authors": ('leading_author_key', 'nunique')}
+    ).set_index(var)
+    for col in plot_info.assessment_columns:
+        g[f"{col}_prop"] = g[col] / g["Major claims"]
+    return g, (lbl_map or {v: v for v in g.index})
+
+grpA, label_mapA = _make_group(varA, label_mapA)
+grpB, label_mapB = _make_group(varB, label_mapB)
+
+# ----------------------------------------------------------------------
+# Layout: 2 rows × 2 cols – left col 40 %, right col 60 %
+fig7 = plt.figure(figsize=(15, 10))
+gs7  = gridspec.GridSpec(
+    2, 2,
+    width_ratios=[0.4, 0.6],
+    height_ratios=[0.5, 0.5],
+    wspace=0.35,
+    hspace=0.25
+)
+
+ax7A = fig7.add_subplot(gs7[0, 0])                # top-left
+ax7B = fig7.add_subplot(gs7[1, 0], sharex=ax7A)   # bottom-left (share y)
+ax7C = fig7.add_subplot(gs7[:, 1])                # right (span rows)
+
+# ── Panel A – Sex vertical bar ─────────────────────────────────────────
+plot_info.create_horizontal_bar_chart(
+    grpA,
+    title="",
+    labels_map=label_mapA,
+    show_p_value=False,
+    other_n={"authors": "n_authors"},
+    pct_axis_label="% of Claims",
+    group_axis_label=varA,
+    ax=ax7A,
+)
+ax7A.set_title("A", loc="left", fontweight="bold", fontsize=24)
+
+# Capture legend handles from A
+lg7 = ax7A.get_legend()
+handles7 = lg7.legend_handles
+labels7  = [t.get_text() for t in lg7.get_texts()]
+lg7.remove()
+
+# ── Panel B – Junior/Senior vertical bar ──────────────────────────────
+plot_info.create_horizontal_bar_chart(
+    grpB,
+    title="",
+    labels_map=label_mapB,
+    show_p_value=False,
+    other_n={"authors": "n_authors"},
+    pct_axis_label="% of Claims",
+    group_axis_label=varB,
+    ax=ax7B,
+)
+ax7B.set_title("B", loc="left", fontweight="bold", fontsize=24)
+# Remove legend from B (if any)
+if ax7B.get_legend():
+    ax7B.get_legend().remove()
+
+# ── Panel C – scatter (full right) ────────────────────────────────────
+scatter_df = author_metrics.copy()
+scatter_df = scatter_df[(scatter_df["Articles"] >= 2) & (scatter_df["Major claims"] >= 6)]
+
+plot_info.create_challenged_vs_articles_scatter(
+    scatter_df,
+    annotate_top_n=8,
+    title="",
+    size_mult=100,
+    name_col="Leading Author Name",
+    ax=ax7C,
+)
+ax7C.set_title("C", loc="left", fontweight="bold", fontsize=24)
+
+# ── Unified legend in upper-right of panel A ──────────────────────────
+ax7A.legend(
+    handles7,
+    labels7,
+    loc="upper right",
+    frameon=True,
+    ncol=1,
+    fontsize=MEDIUM_SIZE,
+)
+
+fig7.tight_layout()
+fig7.savefig("figures/fig7_ABC_leading_author_layout.png",
+             dpi=300, bbox_inches="tight")
+print("Saved → figures/fig7_ABC_leading_author_layout.png")

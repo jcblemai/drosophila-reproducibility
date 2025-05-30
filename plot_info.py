@@ -1099,14 +1099,17 @@ def create_horizontal_bar_chart(
     for lab in var_grouped.index:
         base_label = labels_map.get(lab, str(lab)) if labels_map else str(lab)
         for key, value in other_n.items():
-            base_label += f"({var_grouped.loc[lab, value]})"
+            if orientation == "horizontal":
+                base_label += f"\n({var_grouped.loc[lab, value]})"
+            else:  # vertical
+                base_label += f"({var_grouped.loc[lab, value]})"
             #base_label += f"\n(n={var_grouped.loc[lab, value]})"
         new_labels.append(base_label)
 
     if orientation == "horizontal":
-        ax.set_yticklabels(new_labels, fontweight="bold")
+        ax.set_yticklabels(new_labels, fontweight="normal")
         ax.set_xlim(0, 1.0)
-        ax.set_xlabel(pct_axis_label, fontweight="bold")
+        ax.set_xlabel(pct_axis_label, fontweight="normal")
         if group_axis_label is not None:
             ax.set_ylabel(group_axis_label, fontweight="normal")
     else:
