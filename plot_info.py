@@ -238,7 +238,7 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
         # Group by time periods
         df_copy.loc[:, 'group_by'] = df_copy['year'].apply(bin_years)
         group_order = ['≤1991', '1992-1996', '1997-2001', '2002-2006', '2007-2011']
-        x_label = 'Time Period'
+        x_label = ''
     else:
         # Group by journal categories
         df_copy.loc[:, 'group_by'] = df_copy['impact_factor'].apply(categorize_journal)
@@ -462,8 +462,8 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
     ax.set_ylim(0, y_max)
     
     # Rotate x-axis labels if needed
-    if by_time:
-        plt.xticks(rotation=45)
+    # if by_time:
+    #     plt.xticks(rotation=45)
     
     # Reverse handles and labels to match the original order (not reversed)
     handles = handles[::-1]

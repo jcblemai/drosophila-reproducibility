@@ -788,11 +788,14 @@ fig.savefig('figures/fig2_ABC_claims_distribution.png',
             dpi=300, bbox_inches='tight')
 print("Saved → figures/fig2_ABC_claims_distribution.png")
 
+
+
+# %%
 # ── Figure 3 composite: time‑period claims distribution (A–B) ─────────────
 # Two vertical panels: A = absolute counts ─ time periods
 #                      B = percentage ─ time periods
 
-fig3 = plt.figure(figsize=(10, 10))
+fig3 = plt.figure(figsize=(8, 13))
 gs3  = gridspec.GridSpec(
     2, 1,
     height_ratios=[0.5, 0.5],
@@ -824,6 +827,10 @@ plot_info.create_stacked_bar_plot(
 )
 ax3B.set_title("B", loc="left", fontweight="bold", fontsize=30)
 
+leg = ax3B.get_legend()
+if leg:
+    leg.remove()
+
 # Unify legend: use the one generated in panel A (it has all categories)
 leg3 = ax3A.get_legend()
 handles3 = leg3.legend_handles
@@ -833,7 +840,7 @@ leg3.remove()  # remove default legend from A
 ax3A.legend(
     handles3,
     labels3,
-    loc="upper right",
+    loc="upper left",
     frameon=True,
     ncol=1,
     fontsize=18,
