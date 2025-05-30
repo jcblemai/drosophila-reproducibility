@@ -1025,7 +1025,7 @@ def create_horizontal_bar_chart(
 
         # Sample‑size text
         for i, lab in enumerate(var_grouped.index):
-            sample_txt = f"n={var_grouped.loc[lab,'Major claims']}"
+            sample_txt = f"$n_c$={var_grouped.loc[lab,'Major claims']}"
             ax.text(
                 1.02,
                 i,
@@ -1034,6 +1034,7 @@ def create_horizontal_bar_chart(
                 va="center",
                 fontsize=MEDIUM_SIZE, fontweight='normal',
                 transform=ax.get_yaxis_transform(),
+                usetex=True,
             )
 
         ax.set_yticks(y)
@@ -1077,15 +1078,17 @@ def create_horizontal_bar_chart(
 
         # Sample‑size text above bars
         for i, lab in enumerate(var_grouped.index):
-            sample_txt = f"n={var_grouped.loc[lab,'Major claims']}"
+            sample_txt = f"$n_c$={var_grouped.loc[lab,'Major claims']}"
             ax.text(
                 i,
                 1.02,
                 sample_txt,
                 ha="center",
                 va="bottom",
-                fontsize=MEDIUM_SIZE, fontweight='normal',
+                fontsize=MEDIUM_SIZE, 
+                fontweight='normal',
                 transform=ax.get_xaxis_transform(),
+                usetex=True,
             )
 
         ax.set_xticks(x)
@@ -1096,7 +1099,8 @@ def create_horizontal_bar_chart(
     for lab in var_grouped.index:
         base_label = labels_map.get(lab, str(lab)) if labels_map else str(lab)
         for key, value in other_n.items():
-            base_label += f"\n(n={var_grouped.loc[lab, value]})"
+            base_label += f"({var_grouped.loc[lab, value]})"
+            #base_label += f"\n(n={var_grouped.loc[lab, value]})"
         new_labels.append(base_label)
 
     if orientation == "horizontal":
@@ -1106,7 +1110,7 @@ def create_horizontal_bar_chart(
         if group_axis_label is not None:
             ax.set_ylabel(group_axis_label, fontweight="normal")
     else:
-        ax.set_xticklabels(new_labels, fontweight="normal", rotation=0, ha="center")
+        ax.set_xticklabels(new_labels, fontweight="normal", rotation=45, ha="right")
         ax.set_ylim(0, 1.0)
         ax.set_ylabel(pct_axis_label, fontweight="normal")
 
@@ -1274,7 +1278,7 @@ def plot_author_irreproducibility_focused(
         f"Authors with >20% Challenged: {(df['Challenged prop'] > 0.2).sum()}"
     )
     
-    ax.text(0.98, 0.98, stats_text, transform=ax.transAxes, ha='right', va='top',
+    ax.text(0.5, 0.98, stats_text, transform=ax.transAxes, ha='center', va='top',
         fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
     # Add legend
