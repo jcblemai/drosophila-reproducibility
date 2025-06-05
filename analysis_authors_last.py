@@ -814,3 +814,84 @@ fig8.savefig("figures/fig8_ABC_time_patterns_layout.png",
              dpi=300, bbox_inches="tight")
 print("Saved → figures/fig8_ABC_time_patterns_layout.png")
 
+# %% [markdown]
+# ### Figure 9 – Continuity analysis with vertical bars and scatter
+
+# %%
+# Prepare data for Figure 9
+varA_fig9 = "Continuity"
+varA_fig9_data = leading_author_claims  # No special filtering for Continuity
+
+# Generate grouped data for Continuity
+grpA_fig9, label_mapA_fig9 = _make_group_fig8(varA_fig9, all_categorical_variables[varA_fig9]["labels"], varA_fig9_data)
+
+# Use the same scatter data as other figures (filtered)
+scatter_df_fig9 = author_metrics.copy()
+scatter_df_fig9 = scatter_df_fig9[(scatter_df_fig9["Articles"] >= 2) & (scatter_df_fig9["Major claims"] >= 6)]
+
+# Layout: 2 rows × 2 cols – legend above stackplot, scatter takes full right side
+fig9 = plt.figure(figsize=(15, 8))
+gs9 = gridspec.GridSpec(
+    2, 2,
+    width_ratios=[0.25, 0.75],  # Left 25%, right 75%
+    height_ratios=[0.3, 0.7],   # Top 30% for legend, bottom 70% for stackplot
+    wspace=0.2,
+    hspace=0.1
+)
+
+ax9_legend = fig9.add_subplot(gs9[0, 0])  # top-left - legend space
+ax9A = fig9.add_subplot(gs9[1, 0])       # bottom-left - categorical (70% height)
+ax9B = fig9.add_subplot(gs9[:, 1])       # right - scatter (spans both rows)
+
+# Panel A - Continuity vertical bar chart
+plot_info.create_horizontal_bar_chart(
+    grpA_fig9,
+    title="",
+    labels_map=label_mapA_fig9,
+    show_p_value=False,
+    other_n={"authors": "n_authors"},
+    pct_axis_label="% of Claims",
+    group_axis_label="",
+    orientation="vertical",  # Make it vertical
+    ax=ax9A,
+)
+ax9A.set_title("A", loc="left", fontweight="bold", fontsize=24)
+
+# Capture legend handles from A
+lg9 = ax9A.get_legend()
+handles9 = lg9.legend_handles
+labels9 = [t.get_text() for t in lg9.get_texts()]
+lg9.remove()
+
+# Panel B - Challenged vs Unchallenged scatter
+plot_info.create_challenged_vs_unchallenged_scatter(
+    scatter_df_fig9,
+    annotate_top_n=8,
+    title="",
+    size_mult=100,
+    name_col="Leading Author Name",
+    ax=ax9B,
+)
+ax9B.set_title("B", loc="left", fontweight="bold", fontsize=24)
+
+# Place the legend vertically above the stacked plot
+ax9_legend.axis('off')  # Hide the axes
+
+# Position the legend in the top-left area, above the stacked plot
+legend = ax9_legend.legend(
+    handles9,
+    labels9,
+    loc="center",
+    frameon=True,
+    ncol=1,  # Single column (vertical)
+    fontsize=MEDIUM_SIZE,
+    title="Assessment Category",
+    title_fontsize=MEDIUM_SIZE,
+    bbox_to_anchor=(0.5, 0.5)
+)
+
+fig9.tight_layout()
+fig9.savefig("figures/fig9_AB_continuity_layout.png",
+             dpi=300, bbox_inches="tight")
+print("Saved → figures/fig9_AB_continuity_layout.png")
+

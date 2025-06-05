@@ -105,7 +105,8 @@ all_categorical_variables = {
                     False:"First author that\ndo not become PIs", 
                     True:"First authors that\nbecome PIs"
                 },
-                "title": "Assessment of Scientific Claims for first authors that become PIs",
+                #"title": "Assessment of Scientific Claims for first authors that become PIs",
+                "title": "",
                 "fig_name_prefix" : "fig10_"
             }
 }
