@@ -978,8 +978,18 @@ def create_horizontal_bar_chart(
 # ------------------------------------------------------------------
     # If labels_map is provided, re-index rows to follow the key order.
     if labels_map is not None:
-        ordered_index = [k for k in labels_map.keys() if k in var_grouped.index]
-        var_grouped = var_grouped.loc[ordered_index]
+        # Handle boolean indices properly by creating a new DataFrame with explicit ordering
+        available_keys = list(var_grouped.index)
+        ordered_index = []
+        for k in labels_map.keys():
+            # Find matching keys using explicit equality for boolean values
+            for idx in available_keys:
+                if k == idx:  # This works correctly for boolean values
+                    ordered_index.append(idx)
+                    break
+        if ordered_index:  # Only reorder if we found matching keys
+            # Use reindex instead of loc to avoid boolean indexing issues
+            var_grouped = var_grouped.reindex(ordered_index)
 
     # After any explicit re‑ordering, build the data matrix so that
     # numeric rows correspond one‑to‑one with var_grouped.index

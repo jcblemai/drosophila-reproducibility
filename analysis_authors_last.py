@@ -643,3 +643,174 @@ fig7.tight_layout()
 fig7.savefig("figures/fig7_ABC_leading_author_layout.png",
              dpi=300, bbox_inches="tight")
 print("Saved → figures/fig7_ABC_leading_author_layout.png")
+
+# %% [markdown]
+# ### Figure 8 – Patterns of irreproducibility by last author according to time of starting their lab
+
+# %%
+import matplotlib.gridspec as gridspec
+from plot_info import MEDIUM_SIZE
+
+# Prepare data for panel A - year vs reproducibility (already exists in the code above)
+# Apply the same filtering as in the individual panels (≥2 articles & ≥6 major claims)
+to_plot_year = pd.merge(first_papers_year, author_metrics, left_index=True, right_on='leading_author_key', how='right')
+to_plot_year = to_plot_year[(to_plot_year["Articles"] >= 2) & (to_plot_year["Major claims"] >= 6)]
+
+# ── Choose the two categorical variables for B & C using the same approach as Figure 7 ──
+varB = "F and L"
+varC = "Historical lab after 1998"
+
+# Use the same _make_group function as Figure 7, but with proper data filtering
+def _make_group_fig8(var, lbl_map, claims_data):
+    g = wrangling.create_author_metric(
+        claim_df=claims_data,
+        variable=var,
+        other_col={"n_authors": ('leading_author_key', 'nunique')}
+    ).set_index(var)
+    for col in plot_info.assessment_columns:
+        g[f"{col}_prop"] = g[col] / g["Major claims"]
+    return g, (lbl_map or {v: v for v in g.index})
+
+# Prepare filtered data for each variable as done in the original categorical loop
+# For "F and L" - filter after 1995 and only authors who published after 1998
+leading_author_claims_B = leading_author_claims[leading_author_claims['year'] > 1995]
+author_to_keep_B = leading_author_claims[leading_author_claims['year'] > 1998]['leading_author_key'].unique()
+leading_author_claims_B = leading_author_claims_B[leading_author_claims_B['leading_author_key'].isin(author_to_keep_B)]
+
+# For "Historical lab after 1998" - filter after 1995
+leading_author_claims_C = leading_author_claims[leading_author_claims['year'] > 1995]
+
+# Generate grouped data using the same method as Figure 7
+grpB, label_mapB = _make_group_fig8(varB, all_categorical_variables[varB]["labels"], leading_author_claims_B)
+grpC, label_mapC = _make_group_fig8(varC, all_categorical_variables[varC]["labels"], leading_author_claims_C)
+
+# Layout: 2 rows × 2 cols – left col 40%, right col 60%
+# Reduce height ratios to make space for legend at bottom
+fig8 = plt.figure(figsize=(15, 10))
+gs8 = gridspec.GridSpec(
+    3, 2,
+    width_ratios=[0.4, 0.6],
+    height_ratios=[0.4, 0.4,0.2],  # Reduced from 0.5 to make space for legend
+    wspace=0.35,
+    hspace=0.2  # Reduced spacing
+)
+
+ax8A = fig8.add_subplot(gs8[0, 0])                # top-left
+ax8B = fig8.add_subplot(gs8[1, 0], sharex=ax8A)   # bottom-left
+ax8C = fig8.add_subplot(gs8[:, 1])                # right (span rows)
+
+# Panel A - Year vs reproducibility scatter plot
+# Create scatter plot without size legend first
+scatter = ax8C.scatter(
+    to_plot_year['first_paper_year'],
+    to_plot_year['Challenged prop'],
+    s=to_plot_year['Articles'] * 15,  # Size by Articles
+    c='#3498db',  # Default blue
+    alpha=0.7,
+    edgecolors='white',
+    linewidth=0.5
+)
+
+# Add regression line
+from scipy import stats
+slope, intercept, r_value, p_value, std_err = stats.linregress(
+    to_plot_year['first_paper_year'], to_plot_year['Challenged prop']
+)
+x_line = np.linspace(to_plot_year['first_paper_year'].min(), to_plot_year['first_paper_year'].max(), 100)
+y_line = intercept + slope * x_line
+ax8C.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
+
+# Add regression statistics
+stats_text = f"$r^2$ = {r_value**2:.3f}\\n"
+stats_text += f"p = {p_value:.3e}" if p_value < 0.001 else f"p = {p_value:.3f}"
+stats_text += "\\n" + f"y = {slope:.3f}x + {intercept:.3f}"
+ax8C.text(0.05, 0.95, stats_text, transform=ax8C.transAxes, 
+           va='top', ha='left', fontsize=12, 
+           bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.5'))
+
+# Create size legend on the scatter plot itself (middle left)
+sizes = [5, 10, 20, 30]
+legend_elements = []
+for size in sizes:
+    legend_elements.append(plt.scatter([], [], s=size*15, color='gray', alpha=0.7, 
+                                     edgecolors='white', linewidth=0.5, label=f"{size}"))
+
+legend = ax8C.legend(
+    legend_elements, [f"{size}" for size in sizes],
+    title="Number of Articles",
+    loc='center left',  # Middle left of the scatter plot
+    frameon=True,
+    framealpha=0.9,
+    edgecolor='lightgray',
+    handletextpad=2,
+    labelspacing=1
+)
+legend.get_title().set_fontweight('bold')
+
+ax8C.set_ylim(0, 0.7)
+ax8C.vlines(x=1995, ymin=0, ymax=0.7, color='grey', linestyle='--')
+ax8C.set_xlabel("Year of entry in the field", fontweight='bold')
+ax8C.set_ylabel("Proportion of challenged claims", fontweight='bold')
+ax8C.yaxis.set_major_formatter(plot_info.PercentFormatter(1.0))
+ax8C.grid(linestyle='--', alpha=0.3)
+ax8C.set_axisbelow(True)
+ax8C.spines['top'].set_visible(False)
+ax8C.spines['right'].set_visible(False)
+
+# Remove the automatic title that the function creates
+ax8C.set_title("", fontsize=1)  # Clear any title
+ax8C.text(0.02, 0.98, "A", transform=ax8C.transAxes, fontweight="bold", fontsize=24, va="top")
+
+# Panel B - F and L categorical analysis
+plot_info.create_horizontal_bar_chart(
+    grpB,
+    title="",
+    labels_map=label_mapB,
+    show_p_value=False,
+    other_n={"authors": "n_authors"},
+    pct_axis_label="% of Claims",
+    #group_axis_label="Previous mentee experience",
+    ax=ax8A,
+)
+ax8A.set_title("B", loc="left", fontweight="bold", fontsize=24)
+
+# Capture legend handles from B
+lg8 = ax8A.get_legend()
+handles8 = lg8.legend_handles
+labels8 = [t.get_text() for t in lg8.get_texts()]
+lg8.remove()
+
+# Panel C - Historical lab categorical analysis
+plot_info.create_horizontal_bar_chart(
+    grpC,
+    title="",
+    labels_map=label_mapC,
+    show_p_value=False,
+    other_n={"authors": "n_authors"},
+    pct_axis_label="% of Claims",
+    #group_axis_label="Laboratory tradition",
+    ax=ax8B,
+)
+ax8B.set_title("C", loc="left", fontweight="bold", fontsize=24)
+# Remove legend from C (if any)
+if ax8B.get_legend():
+    ax8B.get_legend().remove()
+
+# Place the common legend under panel C in 2 columns
+fig8.legend(
+    handles8,
+    labels8,
+    loc="lower center",
+    bbox_to_anchor=(0.25, 0.1),  # Position at bottom with some space
+    frameon=True,
+    ncol=2,  # 2 columns as requested
+    fontsize=MEDIUM_SIZE,
+    #title="Assessment Category",
+    title_fontsize=MEDIUM_SIZE
+)
+
+fig8.tight_layout()
+fig8.savefig("figures/fig8_ABC_time_patterns_layout.png",
+             dpi=300, bbox_inches="tight")
+print("Saved → figures/fig8_ABC_time_patterns_layout.png")
+
