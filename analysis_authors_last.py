@@ -885,7 +885,7 @@ legend = ax9_legend.legend(
     frameon=True,
     ncol=1,  # Single column (vertical)
     fontsize=MEDIUM_SIZE,
-    title="Assessment Category",
+    #title="Assessment Category",
     title_fontsize=MEDIUM_SIZE,
     bbox_to_anchor=(0.5, 0.5)
 )
