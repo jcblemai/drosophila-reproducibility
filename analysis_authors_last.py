@@ -359,7 +359,8 @@ for lh in leading_author_claims["leading_author_key"].unique():
     if not found:
         print(f"Warning: No papers found for author {lh}")
 first_papers_year = pd.DataFrame.from_dict(first_papers_year, orient='index', columns=['first_paper_year'])
-
+# save it for the statistical analysis
+first_papers_year.to_csv("preprocessed_data/lh_first_papers_year.csv", sep=";", index_label="leading_author_key")
 # %%
 to_plot = pd.merge(first_papers_year, author_metrics, left_index=True, right_on='leading_author_key', how='right')
 

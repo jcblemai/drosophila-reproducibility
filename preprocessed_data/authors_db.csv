@@ -1,0 +1,798 @@
+author_id,article_id,name,leading_author,first_author,career_stage,expertise_level,author_key
+2,2053,Brun S,False,True,Post-doc,Experienced,brun s
+3,2053,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+1,1650,Charroux B,False,True,Post-doc,Experienced,charroux b
+97,2149,Söderhäll K,True,False,Senior PI,Experienced,soderhall k
+5,2278,Silverman N,False,True,Post-doc,Newcomer,silverman n
+6,2278,Maniatis T,True,False,Senior PI,Newcomer,maniatis t
+7,3437,Basset A,False,True,PhD,Experienced,basset a
+8,3437,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+9,3048,Levine M,True,False,Senior PI,Newcomer,levine m
+11,3096,Reichhart JM,False,True,Senior PI,Experienced,reichhart jm
+12,3096,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+13,2634,Ekengren S,False,True,PhD,Experienced,ekengren s
+14,2634,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+15,2801,Manfruelli P,False,True,Post-doc,Experienced,manfruelli p
+16,2801,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+17,2297,Agaisse H,False,True,Post-doc,Experienced,agaisse h
+18,2297,Perrimon N,True,False,Senior PI,Experienced,perrimon n
+19,2451,De Gregorio E,False,True,Post-doc,Experienced,de gregorio e
+21,3015,Meister M,False,True,Post-doc,Experienced,meister m
+22,3015,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+23,2905,Dimarcq JL,False,True,Post-doc,Experienced,dimarcq jl
+25,2942,Charlet M,False,True,Post-doc,Experienced,charlet m
+28,3148,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+27,3148,Samakovlis C,False,True,Post-doc,Experienced,samakovlis c
+29,2699,Silverman N,False,True,Post-doc,Experienced,silverman n
+31,2577,Michel T,False,True,PhD,Experienced,michel t
+32,2577,Royet J,True,False,Senior PI,Experienced,royet j
+33,3444,Corbo JC,False,True,PhD,Newcomer,corbo jc
+34,3444,Levine M,True,False,Senior PI,Experienced,levine m
+35,2617,Vidal S,False,True,PhD,Experienced,vidal s
+36,2617,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+38,2832,Meister M,True,False,Senior PI,Experienced,meister m
+39,2904,Braun A,False,True,PhD,Experienced,braun a
+42,3069,Kappler C,False,True,Engineer / Technician,Experienced,kappler c
+43,2593,Georgel P,False,True,Post-doc,Experienced,georgel p
+44,2593,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+45,1964,Valanne S,False,True,PhD,Experienced,valanne s
+46,1964,Rämet M,True,False,Senior PI,Experienced,ramet m
+47,1976,Gottar M,False,True,PhD,Experienced,gottar m
+49,2191,Takehana A,False,True,PhD,Experienced,takehana a
+50,2191,Kurata S,True,False,Junior PI,Experienced,kurata s
+51,2517,Choe KM,False,True,PhD,Newcomer,choe km
+53,2426,Boutros M,False,True,Post-doc,Newcomer,boutros m
+55,2869,Nicolas E,False,True,PhD,Experienced,nicolas e
+56,2869,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+57,3052,Reichhart JM,False,True,Senior PI,Experienced,reichhart jm
+58,3052,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+59,2073,Jang IH,False,True,Junior PI,Experienced,jang ih
+61,3453,Uv AE,False,True,Post-doc,Experienced,uv ae
+65,2243,Silverman N,True,False,Junior PI,Experienced,silverman n
+67,2031,Silverman N,True,False,Junior PI,Experienced,silverman n
+68,2049,Zhuang ZH,False,True,PhD,Newcomer,zhuang zh
+69,2049,Ge BX,True,False,Junior PI,Newcomer,ge bx
+70,2239,Hedengren-Olcott M,False,True,Post-doc,Experienced,hedengren-olcott m
+72,2874,Wu LP,False,True,Post-doc,Newcomer,wu lp
+73,2874,Anderson KV,True,False,Senior PI,Newcomer,anderson kv
+74,2146,Kallio J,False,True,PhD,Experienced,kallio j
+75,2146,Rämet M,True,False,Junior PI,Experienced,ramet m
+64,2243,Kaneko T,False,True,Post-doc,Experienced,kaneko t
+76,2350,Minakhina S,False,True,PhD,Newcomer,minakhina s
+77,2350,Steward R,True,False,Senior PI,Experienced,steward r
+79,2110,Rämet M,True,False,Junior PI,Experienced,ramet m
+80,1532,Matskevich AA,False,True,Post-doc,Experienced,matskevich aa
+81,1532,Ferrandon D,True,False,Senior PI,Experienced,ferrandon d
+82,2204,Zettervall CJ,False,True,PhD,Experienced,zettervall cj
+83,2204,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+84,2315,Werner T,False,True,PhD,Experienced,werner t
+86,2104,Kocks C,False,True,Post-doc,Experienced,kocks c
+87,2104,Ezekowitz RA,True,False,Senior PI,Experienced,ezekowitz ra
+88,2313,Weber AN,False,True,PhD,Experienced,weber an
+89,1933,Bidla G,False,True,PhD,Experienced,bidla g
+90,1733,Tang H,False,True,PhD,Newcomer,tang h
+91,1733,Hashimoto C,True,False,Senior PI,Newcomer,hashimoto c
+92,3459,Lanot R,False,True,Post-doc,Experienced,lanot r
+94,1468,Radyuk SN,False,True,PhD,Newcomer,radyuk sn
+96,2149,Johansson KC,False,True,PhD,Experienced,johansson kc
+98,1590,Helenius IT,False,True,PhD,Newcomer,helenius it
+99,1590,Beitel GJ,True,False,Junior PI,Newcomer,beitel gj
+10,3048,Ip YT,False,True,Post-doc,Newcomer,ip yt
+54,2426,Perrimon N,True,False,Senior PI,Newcomer,perrimon n
+40,2904,Meister M,True,False,Senior PI,Experienced,meister m
+4,1650,Royet J,True,False,Senior PI,Experienced,royet j
+93,3459,Meister M,True,False,Senior PI,Experienced,meister m
+48,1976,Ferrandon D,True,False,Junior PI,Experienced,ferrandon d
+78,2110,Kleino A,False,True,PhD,Experienced,kleino a
+30,2699,Maniatis T,True,False,Senior PI,Experienced,maniatis t
+71,2239,Taylor BJ,True,False,Senior PI,Newcomer,taylor bj
+52,2517,Anderson KV,True,False,Senior PI,Newcomer,anderson kv
+60,2073,Lee WJ,True,False,Junior PI,Experienced,lee wj
+41,3069,Reichhart JM,True,False,Senior PI,Experienced,reichhart jm
+95,1468,Orr WC,True,False,Junior PI,Newcomer,orr wc
+62,3453,Samakovlis C,True,False,Junior PI,Experienced,samakovlis c
+85,2315,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+66,2031,Kaneko T,False,True,Post-doc,Experienced,kaneko t
+24,2905,Lagueux M,True,False,Senior PI,Experienced,lagueux m
+20,2451,Lemaitre B,False,False,Senior PI,Experienced,lemaitre b
+100,3452,Williams MJ,False,True,Post-doc,Experienced,williams mj
+103,2571,Courey AJ,True,False,Senior PI,Newcomer,courey aj
+101,3452,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+102,2571,Bhaskar V,False,True,PhD,Newcomer,bhaskar v
+104,2281,Mansfield BE,False,True,PhD,Newcomer,mansfield be
+105,2281,Freitag NE,True,False,Junior PI,Newcomer,freitag ne
+106,1914,Tanji T,False,True,Post-doc,Experienced,tanji t
+107,1914,Ip YT,True,False,Senior PI,Experienced,ip yt
+108,1752,Aggarwal K,False,True,PhD,Experienced,aggarwal k
+109,1752,Silverman N,True,False,Senior PI,Experienced,silverman n
+110,1728,Bergeret E,False,True,Post-doc,Newcomer,bergeret e
+111,1728,Fauvarque MO,True,False,Junior PI,Newcomer,fauvarque mo
+112,1495,Tanji T,False,True,Post-doc,Experienced,tanji t
+113,1495,Ip YT,True,False,Senior PI,Experienced,ip yt
+115,2041,Natori S,True,False,Senior PI,Experienced,natori s
+116,2229,Hu X,False,True,PhD,Experienced,hu x
+117,2229,Ip YT,True,False,Senior PI,Experienced,ip yt
+118,2272,Bettencourt R,False,True,Post-doc,Experienced,bettencourt r
+119,2272,Ip YT,True,False,Senior PI,Experienced,ip yt
+120,2225,Bettencourt R,False,True,Post-doc,Experienced,bettencourt r
+121,2225,Ip YT,True,False,Junior PI,Experienced,ip yt
+123,2575,Hetru C,True,False,Senior PI,Experienced,hetru c
+124,2070,Garver LS,False,True,PhD,Experienced,garver ls
+125,2070,Wu LP,True,False,Junior PI,Experienced,wu lp
+128,2541,Tzou P,False,True,PhD,Experienced,tzou p
+129,2541,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+130,1995,Wang L,False,True,PhD,Experienced,wang l
+131,1995,Ligoxygakis P,True,False,Junior PI,Experienced,ligoxygakis p
+132,3456,Scherfer C,False,True,Post-doc,Experienced,scherfer c
+133,3456,Lemaitre B,True,False,Senior PI,Experienced,lemaitre b
+134,2742,Rutschmann S,False,True,PhD,Experienced,rutschmann s
+135,2742,Ferrandon D,True,False,Junior PI,Experienced,ferrandon d
+136,2054,Zaidman-Rémy A,False,True,PhD,Experienced,zaidman-remy a
+137,2054,Lemaitre B,True,False,Senior PI,Experienced,lemaitre b
+138,2046,Kambris Z,False,True,Post-doc,Experienced,kambris z
+139,2046,Lemaitre B,True,False,Senior PI,Experienced,lemaitre b
+140,3141,Wicker C,False,True,Post-doc,Experienced,wicker c
+141,3141,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+142,2891,Lemaitre B,False,True,Post-doc,Experienced,lemaitre b
+143,2891,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+144,2189,Brandt SM,False,True,Post-doc,Experienced,brandt sm
+145,2189,Schneider DS,True,False,Senior PI,Experienced,schneider ds
+146,1963,Brandt SM,False,True,Post-doc,Experienced,brandt sm
+147,1963,Schneider DS,True,False,Junior PI,Experienced,schneider ds
+148,1926,Kurucz E,False,True,Post-doc,Experienced,kurucz e
+149,1926,Andó I,True,False,Senior PI,Experienced,ando i
+150,2100,Tsuda M,False,True,Post-doc,Experienced,tsuda m
+151,2100,Aigaki T,True,False,Senior PI,Experienced,aigaki t
+152,2443,Takehana A,False,True,PhD,Experienced,takehana a
+153,2443,Kurata S,True,False,Junior PI,Experienced,kurata s
+154,3078,Samakovlis C,False,True,PhD,Experienced,samakovlis c
+155,3078,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+156,2196,Bischoff V,False,True,PhD,Newcomer,bischoff v
+157,2196,Royet J,True,False,Junior PI,Experienced,royet j
+160,2497,Leulier F,False,True,PhD,Experienced,leulier f
+161,2497,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+158,3436,Leulier F,False,True,PhD,Experienced,leulier f
+159,3436,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+162,2253,Pili-Floury S,False,True,PhD,Experienced,pili-floury s
+163,2253,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+164,1703,Defaye A,False,True,PhD,Experienced,defaye a
+165,1703,Leulier F,True,False,Junior PI,Experienced,leulier f
+166,2340,Leulier F,False,True,PhD,Experienced,leulier f
+167,2340,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+168,2184,Stenbak CR,False,True,Post-doc,Experienced,stenbak cr
+170,1987,Leulier F,False,True,Post-doc,Experienced,leulier f
+171,1750,Lhocine N,False,True,PhD,Experienced,lhocine n
+172,1750,Leulier F,True,False,Junior PI,Experienced,leulier f
+173,1987,Meier P,True,False,Junior PI,Newcomer,meier p
+174,1589,Geuking P,False,True,PhD,Experienced,geuking p
+175,1589,Leulier F,True,False,Junior PI,Experienced,leulier f
+176,1649,Ertürk-Hasdemir D,False,True,PhD,Experienced,erturk-hasdemir d
+177,1649,Silverman N,True,False,Junior PI,Experienced,silverman n
+178,3011,Lemaitre B,False,True,Post-doc,Experienced,lemaitre b
+179,3011,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+180,2500,De Gregorio E,False,True,Post-doc,Experienced,de gregorio e
+181,2500,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+182,2590,De Gregorio E,False,True,Post-doc,Experienced,de gregorio e
+184,2693,Tzou P,False,True,PhD,Experienced,tzou p
+185,2693,Imler JL,True,False,Junior PI,Experienced,imler jl
+186,2026,Scherfer C,False,True,Post-doc,Experienced,scherfer c
+187,2026,Lemaitre B,True,False,Senior PI,Experienced,lemaitre b
+188,2004,Tang H,False,True,PhD,Newcomer,tang h
+189,2004,Hashimoto C,True,False,Senior PI,Newcomer,hashimoto c
+190,2127,Vodovar N,False,True,PhD,Experienced,vodovar n
+191,2127,Lemaitre B,True,False,Senior PI,Experienced,lemaitre b
+192,1639,Buchon N,False,True,Post-doc,Experienced,buchon n
+193,1639,Lemaitre B,True,False,Senior PI,Experienced,lemaitre b
+194,2945,Lemaitre B,False,True,Post-doc,Experienced,lemaitre b
+195,2945,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+196,3440,Basset A,False,True,PhD,Experienced,basset a
+198,2978,Lemaitre B,False,True,Post-doc,Experienced,lemaitre b
+199,2978,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+200,1586,Gendrin M,False,True,PhD,Experienced,gendrin m
+201,1586,Lemaitre B,True,False,Senior PI,Experienced,lemaitre b
+202,2849,Ferrandon D,False,True,Post-doc,Experienced,ferrandon d
+183,2590,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+114,2041,Tanji T,False,True,PhD,Experienced,tanji t
+127,2113,Schneider DS,False,False,Junior PI,Experienced,schneider ds
+197,3440,Lemaitre B,False,False,Junior PI,Experienced,lemaitre b
+169,2184,Lemaitre B,False,False,Junior PI,Experienced,lemaitre b
+204,3462,Khush RS,False,True,Post-doc,Experienced,khush rs
+210,3047,Georgel P,False,True,Post-doc,Experienced,georgel p
+212,2068,Bischoff V,False,True,PhD,Experienced,bischoff v
+214,2520,Gottar M,False,True,PhD,Experienced,gottar m
+217,1785,Royet J,True,False,Senior PI,Experienced,royet j
+223,2543,Ferrandon D,True,False,Junior PI,Experienced,ferrandon d
+227,1880,Ferrandon D,True,False,Senior PI,Experienced,ferrandon d
+228,1438,Bou Aoun R,False,True,PhD,Experienced,bou aoun r
+231,1600,Roussel A,True,False,Senior PI,Experienced,roussel a
+241,1760,Kurata S,True,False,Senior PI,Experienced,kurata s
+243,2416,Moscat J,True,False,Senior PI,Newcomer,moscat j
+248,1646,Ayres JS,False,True,PhD,Experienced,ayres js
+203,2849,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+247,1526,Kurata S,True,False,Senior PI,Experienced,kurata s
+232,2335,Stöven S,False,True,PhD,Experienced,stoven s
+208,2039,Liehl P,False,True,PhD,Experienced,liehl p
+218,1797,Leone P,False,True,Post-doc,Experienced,leone p
+226,1880,Nehme NT,False,True,PhD,Experienced,nehme nt
+235,2151,Tatar M,True,False,Senior PI,Experienced,tatar m
+238,1561,Paquette N,False,True,Post-doc,Experienced,paquette n
+240,1760,Yano T,False,True,Post-doc,Experienced,yano t
+249,1646,Schneider DS,True,False,Senior PI,Experienced,schneider ds
+233,2335,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+205,3462,Lemaitre B,True,False,Junior PI,Experienced,lemaitre b
+206,2865,Levashina EA,False,True,Post-doc,Experienced,levashina ea
+209,2039,Lemaitre B,True,False,Senior PI,Experienced,lemaitre b
+216,1785,Maillet F,False,True,Post-doc,Experienced,maillet f
+222,2543,Rutschmann S,False,True,PhD,Experienced,rutschmann s
+224,2702,Rutschmann S,False,True,PhD,Experienced,rutschmann s
+229,1438,Matt N,True,False,Junior PI,Experienced,matt n
+230,1600,Mishima Y,False,True,Post-doc,Experienced,mishima y
+234,2151,Zerofsky M,False,True,PhD,Experienced,zerofsky m
+236,1757,Flatt T,False,True,Post-doc,Experienced,flatt t
+239,1561,Silverman N,True,False,Senior PI,Experienced,silverman n
+242,2416,Avila A,False,True,Post-doc,Newcomer,avila a
+244,2056,Lim JH,False,True,Post-doc,Experienced,lim jh
+246,1526,Goto A,False,True,Post-doc,Experienced,goto a
+213,2068,Royet J,True,False,Junior PI,Experienced,royet j
+221,2276,Ferrandon D,True,False,Junior PI,Experienced,ferrandon d
+207,2865,Imler JL,True,False,Junior PI,Experienced,imler jl
+211,3047,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+215,2520,Royet J,True,False,Junior PI,Experienced,royet j
+219,1797,Roussel A,True,False,Junior PI,Experienced,roussel a
+225,2702,Ferrandon D,True,False,Junior PI,Experienced,ferrandon d
+237,1757,Silverman N,True,False,Senior PI,Experienced,silverman n
+245,2056,Oh BH,True,False,Senior PI,Experienced,oh bh
+250,1947,Schneider DS,True,True,Senior PI,Experienced,schneider ds
+253,1817,Ayres JS,False,True,PhD,Experienced,ayres js
+254,1817,Schneider DS,True,False,Senior PI,Experienced,schneider ds
+255,2731,Elrod-Erickson M,False,True,Post-doc,Experienced,elrod-erickson m
+257,2325,Dionne MS,False,True,Post-doc,Experienced,dionne ms
+261,1919,Shirasu-Hiza MM,False,True,PhD,Experienced,shirasu-hiza mm
+262,1919,Schneider DS,True,False,Senior PI,Experienced,schneider ds
+263,1716,Ayres JS,False,True,PhD,Experienced,ayres js
+265,1931,Levitin A,False,True,PhD,Experienced,levitin a
+266,1931,Whiteway M,True,False,Senior PI,Newcomer,whiteway m
+267,1569,Mabery EM,False,True,Post-doc,Experienced,mabery em
+268,1569,Schneider DS,True,False,Senior PI,Experienced,schneider ds
+269,1993,Dionne MS,False,True,Post-doc,Experienced,dionne ms
+260,1763,Schneider DS,False,False,Senior PI,Experienced,schneider ds
+252,2730,Shahabuddin M,False,False,Junior PI,Newcomer,shahabuddin m
+271,2065,Leclerc V,False,True,Post-doc,Experienced,leclerc v
+272,2065,Reichhart JM,True,False,Senior PI,Experienced,reichhart jm
+273,2777,Ekengren S,False,True,PhD,Experienced,ekengren s
+274,2777,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+275,2698,Stöven S,False,True,PhD,Experienced,stoven s
+276,2698,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+277,2356,Kurucz E,False,True,Post-doc,Experienced,kurucz e
+278,2356,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+279,1522,Valanne S,False,True,PhD,Experienced,valanne s
+280,1522,Rämet M,True,False,Senior PI,Experienced,ramet m
+281,2682,Hedengren M,False,True,PhD,Experienced,hedengren m
+282,2682,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+283,3445,Daffre S,False,True,PhD,Experienced,daffre s
+284,3445,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+285,2946,Dushay MS,False,True,Post-doc,Experienced,dushay ms
+286,2946,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+287,3005,Rosetto M,False,True,Post-doc,Experienced,rosetto m
+288,3005,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+289,3097,Kylsten P,False,True,PhD,Experienced,kylsten p
+290,3097,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+291,2604,Ekengren S,False,True,PhD,Experienced,ekengren s
+292,2604,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+293,3164,Kylsten P,False,True,PhD,Experienced,kylsten p
+294,3164,Hultmark D,True,False,Junior PI,Experienced,hultmark d
+295,1959,Kurucz E,False,True,Post-doc,Experienced,kurucz e
+297,3460,Márkus R,False,True,PhD,Newcomer,markus r
+298,3460,Andó I,True,False,Senior PI,Experienced,ando i
+299,2957,Theopold U,False,True,Post-doc,Experienced,theopold u
+300,2957,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+303,3458,Hultmark D,True,True,Senior PI,Experienced,hultmark d
+304,3064,Engström Y,False,True,Junior PI,Experienced,engstrom y
+306,3008,Asling B,False,True,PhD,Experienced,asling b
+308,1801,Kleino A,False,True,PhD,Experienced,kleino a
+310,1999,Rus F,False,True,PhD,Experienced,rus f
+311,1999,Andó I,True,False,Senior PI,Experienced,ando i
+312,2626,Ekengren S,False,True,PhD,Experienced,ekengren s
+313,2626,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+314,1662,Wiklund ML,False,True,PhD,Experienced,wiklund ml
+315,1662,Stöven S,True,False,Junior PI,Experienced,stoven s
+316,2920,Tryselius Y,False,True,PhD,Experienced,tryselius y
+317,2920,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+318,2576,Lindmark H,False,True,PhD,Experienced,lindmark h
+319,2576,Söderhäll K,True,False,Senior PI,Experienced,soderhall k
+320,3140,Samakovlis C,False,True,PhD,Experienced,samakovlis c
+321,3140,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+322,2684,Werner T,False,True,PhD,Experienced,werner t
+323,2684,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+324,3103,Tryselius Y,False,True,PhD,Experienced,tryselius y
+326,1953,Williams MJ,False,True,Post-doc,Experienced,williams mj
+328,3461,Williams MJ,False,True,Post-doc,Experienced,williams mj
+329,3461,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+330,2561,Rämet M,False,True,Post-doc,Experienced,ramet m
+331,2561,Manfruelli P,True,False,Junior PI,Experienced,manfruelli p
+332,2519,Rämet M,False,True,Post-doc,Newcomer,ramet m
+333,2519,Ezekowitz RA,True,False,Senior PI,Newcomer,ezekowitz ra
+334,2040,Ulvila J,False,True,Post-doc,Experienced,ulvila j
+335,2040,Rämet M,True,False,Senior PI,Experienced,ramet m
+336,2582,Rämet M,False,True,Post-doc,Newcomer,ramet m
+337,2582,Ezekowitz RA,True,False,Senior PI,Newcomer,ezekowitz ra
+338,2311,Pearson AM,False,True,Post-doc,Experienced,pearson am
+302,2778,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+301,2778,Hedengren M,False,True,PhD,Experienced,hedengren m
+220,2276,Gobert V,False,True,PhD,Experienced,gobert v
+270,1993,Schneider DS,True,False,Senior PI,Experienced,schneider ds
+256,2731,Schneider D,True,False,Junior PI,Experienced,schneider d
+325,3103,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+327,1953,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+307,3008,Hultmark D,True,False,Senior PI,Experienced,hultmark d
+305,3064,Faye I,True,False,Senior PI,Experienced,faye i
+264,1716,Schneider DS,True,False,Senior PI,Experienced,schneider ds
+296,1959,Andó I,True,False,Senior PI,Experienced,ando i
+251,2730,Schneider DS,True,True,Junior PI,Newcomer,schneider ds
+348,2492,Ligoxygakis P,False,True,Post-doc,Experienced,ligoxygakis p
+352,2976,Levashina EA,False,True,Post-doc,Experienced,levashina ea
+367,3347,Rizki TM,True,False,Senior PI,Experienced,rizki tm
+369,3389,Rizki TM,True,False,Senior PI,Experienced,rizki tm
+378,1702,Williams MJ,True,True,Junior PI,Experienced,williams mj
+379,2258,Park JM,False,True,Post-doc,Experienced,park jm
+384,2172,Lee WJ,True,False,Junior PI,Experienced,lee wj
+393,3002,Pearson A,False,True,PhD,Experienced,pearson a
+394,3002,Krieger M,True,False,Senior PI,Newcomer,krieger m
+339,2311,Ezekowitz RA,True,False,Senior PI,Newcomer,ezekowitz ra
+351,2846,Bulet P,True,False,Senior PI,Experienced,bulet p
+343,3438,Ligoxygakis P,True,False,Junior PI,Experienced,ligoxygakis p
+365,3447,Rizki TM,True,True,Senior PI,Experienced,rizki tm
+347,2410,Reichhart JM,True,False,Senior PI,Experienced,reichhart jm
+353,2976,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+357,3014,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+382,3451,Williams MJ,True,False,Junior PI,Experienced,williams mj
+388,2989,Engström Y,True,False,Junior PI,Experienced,engstrom y
+344,2489,Ligoxygakis P,False,True,Post-doc,Experienced,ligoxygakis p
+340,1749,Wang L,False,True,PhD,Experienced,wang l
+363,3448,Rizki TM,True,True,Senior PI,Experienced,rizki tm
+355,3034,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+356,3014,Fehlbaum P,False,True,PhD,Experienced,fehlbaum p
+359,2264,Ehret-Sabatier L,True,False,Junior PI,Experienced,ehret-sabatier l
+360,2247,Rabel D,False,True,PhD,Experienced,rabel d
+364,3292,Rizki TM,True,True,Senior PI,Experienced,rizki tm
+370,3450,Gateff E,True,True,Senior PI,Experienced,gateff e
+372,3457,Gateff E,False,True,Post-doc,Experienced,gateff e
+376,2898,Williams MJ,False,True,PhD,Newcomer,williams mj
+381,3451,Xavier MJ,False,True,PhD,Experienced,xavier mj
+374,3030,Konrad L,False,True,Post-doc,Experienced,konrad l
+341,1749,Ligoxygakis P,True,False,Junior PI,Experienced,ligoxygakis p
+342,3438,Filipe SR,False,True,Post-doc,Experienced,filipe sr
+346,2410,Ligoxygakis P,False,True,Post-doc,Experienced,ligoxygakis p
+349,2492,Reichhart JM,True,False,Senior PI,Experienced,reichhart jm
+350,2846,Uttenweiler-Joseph S,False,True,PhD,Experienced,uttenweiler-joseph s
+354,3034,Dimarcq JL,False,True,Post-doc,Experienced,dimarcq jl
+361,2247,Bulet P,True,False,Senior PI,Experienced,bulet p
+362,3273,Rizki TM,True,True,Post-doc,Experienced,rizki tm
+366,3347,Rizki RM,False,True,Post-doc,Experienced,rizki rm
+368,3389,Rizki RM,False,True,Post-doc,Experienced,rizki rm
+371,3449,Gateff E,True,True,Senior PI,Experienced,gateff e
+373,3457,Schneiderman HA,True,False,Senior PI,Experienced,schneiderman ha
+377,2898,Eldon ED,True,False,Junior PI,Newcomer,eldon ed
+380,2258,Wasserman SA,True,False,Senior PI,Experienced,wasserman sa
+383,2172,Ha EM,False,True,PhD,Experienced,ha em
+385,2442,Mukae N,False,True,PhD,Newcomer,mukae n
+386,2442,Nagata S,True,False,Senior PI,Newcomer,nagata s
+387,2989,Petersen UM,False,True,PhD,Experienced,petersen um
+389,1758,Davis MM,False,True,PhD,Newcomer,davis mm
+390,1758,Hodgetts RB,True,False,Senior PI,Newcomer,hodgetts rb
+391,1459,Chen J,False,True,PhD,Newcomer,chen j
+392,1459,Han J,True,False,Senior PI,Newcomer,han j
+395,3455,Sorrentino RP,False,True,PhD,Experienced,sorrentino rp
+396,3455,Govind S,True,False,Junior PI,Experienced,govind s
+397,2088,Chiu H,False,True,PhD,Experienced,chiu h
+398,2088,Govind S,True,False,Junior PI,Experienced,govind s
+399,1638,Tokusumi T,False,True,PhD,Experienced,tokusumi t
+400,1638,Schulz RA,True,False,Junior PI,Experienced,schulz ra
+401,2145,Mellroth P,False,True,PhD,Experienced,mellroth p
+402,2145,Steiner H,True,False,Senior PI,Experienced,steiner h
+403,2366,Mellroth P,False,True,PhD,Experienced,mellroth p
+404,2366,Steiner H,True,False,Senior PI,Experienced,steiner h
+405,1866,Persson C,False,True,PhD,Experienced,persson c
+406,1866,Steiner H,True,False,Senior PI,Experienced,steiner h
+407,1979,Mellroth P,False,True,PhD,Experienced,mellroth p
+408,1979,Steiner H,True,False,Senior PI,Experienced,steiner h
+409,2675,Lu Y,False,True,PhD,Newcomer,lu y
+410,2675,Anderson KV,True,False,Senior PI,Newcomer,anderson kv
+411,1836,Libert S,False,True,PhD,Newcomer,libert s
+412,1836,Pletcher SD,True,False,Senior PI,Newcomer,pletcher sd
+413,2955,Rodriguez A,False,True,PhD,Experienced,rodriguez a
+415,2737,Bernal A,False,True,PhD,Experienced,bernal a
+417,1902,Taylor K,False,True,PhD,Experienced,taylor k
+418,1902,Kimbrell DA,True,False,Senior PI,Experienced,kimbrell da
+416,2737,Kimbrell DA,True,False,Junior PI,Experienced,kimbrell da
+414,2955,Kimbrell DA,True,False,Junior PI,Experienced,kimbrell da
+419,2667,Zhou Z,False,True,PhD,Experienced,zhou z
+420,2667,Kimbrell DA,True,False,Senior PI,Experienced,kimbrell da
+358,2264,Levy F,False,True,Post-doc,Experienced,levy f
+422,2396,O'Farrell PH,True,False,Senior PI,Newcomer,o'farrell ph
+423,2800,Franc NC,False,True,PhD,Newcomer,franc nc
+424,2800,White K,True,False,Junior PI,Newcomer,white k
+425,2960,Franc NC,False,True,PhD,Newcomer,franc nc
+426,2960,Ezekowitz RA,True,False,Senior PI,Newcomer,ezekowitz ra
+427,1726,Cuttell L,False,True,PhD,Experienced,cuttell l
+428,1726,Franc NC,True,False,Junior PI,Experienced,franc nc
+429,1886,Silva E,False,True,PhD,Experienced,silva e
+430,1886,Franc NC,True,False,Junior PI,Experienced,franc nc
+431,2161,Irving P,False,True,PhD,Experienced,irving p
+432,2161,Meister M,True,False,Senior PI,Experienced,meister m
+433,2970,Meister M,False,True,Post-doc,Experienced,meister m
+434,2970,Richards G,True,False,Senior PI,Newcomer,richards g
+435,2413,Munier AI,False,True,PhD,Experienced,munier ai
+436,2413,Lagueux M,True,False,Senior PI,Experienced,lagueux m
+437,2201,Munier AI,False,True,PhD,Experienced,munier ai
+438,2201,Lagueux M,True,False,Senior PI,Experienced,lagueux m
+439,2649,Tingvall TO,False,True,PhD,Experienced,tingvall to
+440,2649,Engström Y,True,False,Junior PI,Experienced,engstrom y
+441,2016,Ryu JH,False,True,PhD,Experienced,ryu jh
+442,2016,Lee WJ,True,False,Senior PI,Experienced,lee wj
+443,2793,Petersen UM,False,True,PhD,Experienced,petersen um
+445,2925,Kadalayil L,False,True,Post-doc,Experienced,kadalayil l
+446,2925,Engström Y,True,False,Junior PI,Experienced,engstrom y
+447,2290,Uvell H,False,True,PhD,Experienced,uvell h
+448,2290,Engström Y,True,False,Senior PI,Experienced,engstrom y
+449,1944,Junell A,False,True,PhD,Experienced,junell a
+450,1944,Engström Y,True,False,Senior PI,Experienced,engstrom y
+451,2021,Delaney JR,False,True,Post-doc,Newcomer,delaney jr
+452,2021,Mlodzik M,True,False,Senior PI,Newcomer,mlodzik m
+453,2248,Scherfer C,False,True,PhD,Experienced,scherfer c
+454,2248,Theopold U,True,False,Senior PI,Experienced,theopold u
+455,1962,Lesch C,False,True,PhD,Experienced,lesch c
+456,1962,Theopold U,True,False,Senior PI,Experienced,theopold u
+457,1704,Bidla G,False,True,PhD,Experienced,bidla g
+458,1704,Theopold U,True,False,Senior PI,Experienced,theopold u
+459,2185,Karlsson C,False,True,Post-doc,Experienced,karlsson c
+460,2185,Theopold U,True,False,Senior PI,Experienced,theopold u
+461,2188,Korayem AM,False,True,PhD,Experienced,korayem am
+462,2188,Theopold U,True,False,Senior PI,Experienced,theopold u
+463,1818,Lindgren M,False,True,PhD,Experienced,lindgren m
+464,1818,Dushay MS,True,False,Junior PI,Experienced,dushay ms
+465,1557,Wang Zhi,False,True,PhD,Experienced,wang zhi
+466,1557,Theopold U,True,False,Senior PI,Experienced,theopold u
+467,2249,Apidianakis Y,False,True,Post-doc,Newcomer,apidianakis y
+470,2163,Rahme LG,True,False,Junior PI,Newcomer,rahme lg
+375,3030,Gateff E,True,False,Senior PI,Experienced,gateff e
+345,2489,Reichhart JM,True,False,Senior PI,Experienced,reichhart jm
+444,2793,Engström Y,True,False,Junior PI,Experienced,engstrom y
+468,2249,Mylonakis E,True,False,Junior PI,Newcomer,mylonakis e
+469,2163,Apidianakis Y,False,True,Post-doc,Newcomer,apidianakis y
+471,1710,Apidianakis Y,False,True,Post-doc,Newcomer,apidianakis y
+472,1710,Rahme LG,True,False,Junior PI,Newcomer,rahme lg
+476,2963,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+473,1736,El Chamy L,False,True,PhD,Experienced,el chamy l
+475,2963,Gross I,False,True,PhD,Experienced,gross i
+474,1736,Reichhart JM,True,False,Senior PI,Experienced,reichhart jm
+477,2709,Tauszig S,False,True,PhD,Experienced,tauszig s
+478,2709,Imler JL,True,False,Junior PI,Experienced,imler jl
+479,3004,Georgel P,False,True,Post-doc,Experienced,georgel p
+480,3004,Hoffmann JA,True,False,Senior PI,Experienced,hoffmann ja
+482,2572,Imler JL,True,False,Junior PI,Experienced,imler jl
+566,2809,Ip YT,True,False,Junior PI,Experienced,ip yt
+483,2764,Imler JL,True,True,Junior PI,Newcomer,imler jl
+484,2785,Levashina EA,False,True,Post-doc,Experienced,levashina ea
+485,2785,Reichhart JM,True,False,Senior PI,Experienced,reichhart jm
+486,2430,Naitza S,False,True,Post-doc,Experienced,naitza s
+487,2430,Reichhart JM,True,False,Senior PI,Experienced,reichhart jm
+488,1854,Goto A,False,True,Post-doc,Experienced,goto a
+489,1854,Reichhart JM,True,False,Senior PI,Experienced,reichhart jm
+491,2009,Steward R,True,False,Senior PI,Experienced,steward r
+492,2524,Bhattacharya A,False,True,Post-doc,Experienced,bhattacharya a
+493,2524,Steward R,True,False,Senior PI,Experienced,steward r
+494,2735,Lin P,False,True,Post-doc,Experienced,lin p
+495,2735,Steward R,True,False,Senior PI,Experienced,steward r
+496,2122,Agaisse H,False,True,Post-doc,Experienced,agaisse h
+498,1882,Derré I,False,True,Post-doc,Experienced,derre i
+499,1882,Agaisse H,True,False,Junior PI,Experienced,agaisse h
+500,2111,Gesellchen V,False,True,PhD,Experienced,gesellchen v
+501,2111,Boutros M,True,False,Junior PI,Experienced,boutros m
+502,1570,Kuttenkeuler D,False,True,PhD,Experienced,kuttenkeuler d
+503,1570,Boutros M,True,False,Senior PI,Experienced,boutros m
+504,1994,Senger K,False,True,Post-doc,Experienced,senger k
+505,1994,Levine M,True,False,Senior PI,Experienced,levine m
+506,2266,Senger K,False,True,Post-doc,Experienced,senger k
+507,2266,Levine M,True,False,Senior PI,Experienced,levine m
+508,1774,Reed DE,False,True,PhD,Experienced,reed de
+509,1774,Senger K,True,False,Junior PI,Experienced,senger k
+510,2625,Lee JH,False,True,PhD,Newcomer,lee jh
+511,2625,Chung J,True,False,Junior PI,Newcomer,chung j
+512,2761,Kim YS,False,True,PhD,Newcomer,kim ys
+513,2761,Lee WJ,True,False,Junior PI,Newcomer,lee wj
+514,2598,Kim YS,False,True,PhD,Newcomer,kim ys
+515,2598,Yoo MA,True,False,Junior PI,Newcomer,yoo ma
+516,1992,Kim M,False,True,PhD,Newcomer,kim m
+517,1992,Chung J,True,False,Senior PI,Newcomer,chung j
+518,2275,Ryu JH,False,True,PhD,Experienced,ryu jh
+519,2275,Lee WJ,True,False,Senior PI,Experienced,lee wj
+520,1828,Ryu JH,False,True,PhD,Experienced,ryu jh
+521,1828,Lee WJ,True,False,Senior PI,Experienced,lee wj
+522,2696,Kim YS,False,True,PhD,Experienced,kim ys
+523,2696,Lee WJ,True,False,Junior PI,Experienced,lee wj
+524,2234,Han SH,False,True,PhD,Experienced,han sh
+525,2234,Lee WJ,True,False,Junior PI,Experienced,lee wj
+526,1530,Huang HR,False,True,Post-doc,Experienced,huang hr
+527,1530,Maniatis T,True,False,Senior PI,Experienced,maniatis t
+528,1894,Kim LK,False,True,PhD,Newcomer,kim lk
+529,1894,Kim YJ,True,False,Junior PI,Newcomer,kim yj
+530,1625,Ha EM,False,True,PhD,Experienced,ha em
+531,1625,Lee WJ,True,False,Senior PI,Experienced,lee wj
+532,1677,Ha EM,False,True,PhD,Experienced,ha em
+533,1677,Lee WJ,True,False,Senior PI,Experienced,lee wj
+534,1730,Jin LH,False,True,PhD,Newcomer,jin lh
+535,1730,Kim YJ,True,False,Junior PI,Newcomer,kim yj
+536,2085,Park SY,False,True,PhD,Newcomer,park sy
+537,2085,Cho YH,True,False,Junior PI,Newcomer,cho yh
+538,2729,Kwon EJ,False,True,PhD,Newcomer,kwon ej
+539,2729,Yamaguchi M,True,False,Senior PI,Newcomer,yamaguchi m
+540,2108,Márkus R,False,True,PhD,Experienced,markus r
+541,2108,Andó I,True,False,Senior PI,Experienced,ando i
+542,1618,Honti V,False,True,PhD,Experienced,honti v
+543,1618,Andó I,True,False,Senior PI,Experienced,ando i
+544,2398,Asha H,False,True,Post-doc,Experienced,asha h
+545,2398,Dearolf CR,True,False,Senior PI,Experienced,dearolf cr
+546,2602,Parker JS,False,True,PhD,Experienced,parker js
+547,2602,Gay NJ,True,False,Senior PI,Experienced,gay nj
+548,2138,Weber AN,False,True,PhD,Experienced,weber an
+549,1922,Weber AN,False,True,PhD,Experienced,weber an
+550,1922,Gay NJ,True,False,Senior PI,Experienced,gay nj
+551,1768,Chamilos G,False,True,Post-doc,Newcomer,chamilos g
+552,1768,Kontoyiannis DP,True,False,Senior PI,Newcomer,kontoyiannis dp
+553,2643,Cornwell WD,False,True,Post-doc,Newcomer,cornwell wd
+554,2643,Kirkpatrick RB,True,False,Senior PI,Newcomer,kirkpatrick rb
+555,2792,Han ZS,False,True,PhD,Experienced,han zs
+557,2863,Han ZS,False,True,PhD,Experienced,han zs
+558,2863,Ip YT,True,False,Junior PI,Experienced,ip yt
+559,2943,Sluss HK,False,True,PhD,Experienced,sluss hk
+560,2943,Ip YT,True,False,Junior PI,Experienced,ip yt
+561,2564,Ooi JY,False,True,PhD,Experienced,ooi jy
+562,2564,Ip YT,True,False,Junior PI,Experienced,ip yt
+563,1877,Domanitskaya EV,False,True,PhD,Newcomer,domanitskaya ev
+564,1877,Kubli E,True,False,Senior PI,Newcomer,kubli e
+565,2809,Meng X,False,True,PhD,Experienced,meng x
+567,2099,Yagi Y,False,True,PhD,Experienced,yagi y
+568,2099,Ip YT,True,False,Senior PI,Experienced,ip yt
+569,1580,DiAngelo JR,False,True,PhD,Newcomer,diangelo jr
+570,1580,Birnbaum MJ,True,False,Junior PI,Newcomer,birnbaum mj
+571,2084,Stroschein-Stevenson SL,False,True,PhD,Newcomer,stroschein-stevenson sl
+572,2084,Johnson AD,True,False,Junior PI,Newcomer,johnson ad
+573,2148,Huang L,False,True,PhD,Newcomer,huang l
+574,2148,Tanda S,True,False,Senior PI,Newcomer,tanda s
+575,1928,Wu J,False,True,PhD,Experienced,wu j
+576,1928,Wu LP,True,False,Junior PI,Experienced,wu lp
+577,2608,Wu LP,False,True,Post-doc,Newcomer,wu lp
+556,2792,Ip YT,True,False,Junior PI,Experienced,ip yt
+497,2122,Perrimon N,False,False,Senior PI,Experienced,perrimon n
+578,1744,Pastor-Pareja JC,False,True,Post-doc,Newcomer,pastor-pareja jc
+580,1800,Kwon SY,False,True,PhD,Newcomer,kwon sy
+581,1800,Badenhorst P,True,False,Junior PI,Newcomer,badenhorst p
+600,1745,Stofanko M,False,True,PhD,Newcomer,stofanko m
+601,1745,Badenhorst P,True,False,Junior PI,Newcomer,badenhorst p
+604,2745,Zapata JM,False,True,PhD,Newcomer,zapata jm
+605,2745,Reed JC,True,False,Junior PI,Newcomer,reed jc
+615,1978,Pletcher SD,True,False,Junior PI,Newcomer,pletcher sd
+617,1899,Tsichritzis T,False,True,PhD,Newcomer,tsichritzis t
+628,2333,Vierstraete E,False,True,PhD,Newcomer,vierstraete e
+629,2333,Schoofs L,True,False,Junior PI,Newcomer,schoofs l
+660,1628,Cohen L,False,True,PhD,Newcomer,cohen l
+661,1628,Gurevitz M,True,False,Junior PI,Newcomer,gurevitz m
+672,1543,Fellous S,False,True,Post-doc,Experienced,fellous s
+674,1555,Matova N,False,True,Post-doc,Experienced,matova n
+677,1577,Ligoxygakis P,True,False,Senior PI,Experienced,ligoxygakis p
+584,1937,Pal S,False,True,PhD,Experienced,pal s
+579,1744,Xu T,True,False,Senior PI,Newcomer,xu t
+582,1844,Pal S,False,True,PhD,Experienced,pal s
+583,1844,Wu LP,True,False,Junior PI,Experienced,wu lp
+586,1563,Becker T,False,True,PhD,Newcomer,becker t
+587,1563,Hoch M,True,False,Junior PI,Newcomer,hoch m
+588,2025,Zhuang ZH,False,True,PhD,Newcomer,zhuang zh
+590,1787,Boltz KA,False,True,PhD,Newcomer,boltz ka
+596,2169,Choe KM,False,True,PhD,Experienced,choe km
+599,1956,Anderson KV,True,False,Senior PI,Experienced,anderson kv
+602,3442,Busse MS,False,True,PhD,Experienced,busse ms
+609,2197,Sakaguchi K,True,False,Senior PI,Experienced,sakaguchi k
+614,1978,Libert S,False,True,PhD,Newcomer,libert s
+616,1899,Mosialos G,True,False,Senior PI,Newcomer,mosialos g
+618,3439,Babcock DT,False,True,PhD,Newcomer,babcock dt
+620,1748,Tian C,False,True,PhD,Newcomer,tian c
+623,3454,Cheng W,False,True,PhD,Newcomer,cheng w
+625,2269,Schoofs L,True,False,Junior PI,Newcomer,schoofs l
+626,2238,Vierstraete E,False,True,PhD,Newcomer,vierstraete e
+632,2158,McKean KA,True,False,Senior PI,Newcomer,mckean ka
+633,2158,Schlenke TA,False,True,Post-doc,Newcomer,schlenke ta
+635,1948,Pham LN,False,True,PhD,Experienced,pham ln
+639,1863,Dijkers PF,False,True,Post-doc,Newcomer,dijkers pf
+640,1863,O'Farrell PH,True,False,Senior PI,Newcomer,o'farrell ph
+643,1884,Avet-Rochex A,False,True,PhD,Newcomer,avet-rochex a
+648,2953,Coustau C,False,True,PhD,Experienced,coustau c
+649,2953,ffrench-Constant RH,True,False,Senior PI,Newcomer,ffrench-constant rh
+650,3463,Nam HJ,False,True,PhD,Newcomer,nam hj
+651,3463,Lee WJ,True,False,Senior PI,Experienced,lee wj
+654,2118,Blow NS,False,True,Post-doc,Newcomer,blow ns
+662,1815,Schmidt RL,False,True,Post-doc,Newcomer,schmidt rl
+664,1595,Bond D,False,True,PhD,Experienced,bond d
+666,1672,Lauwers A,False,True,PhD,Newcomer,lauwers a
+668,1827,Lee JE,False,True,PhD,Newcomer,lee je
+671,1619,Kanuka H,True,False,Junior PI,Experienced,kanuka h
+676,1577,Shia AK,False,True,PhD,Experienced,shia ak
+679,2117,Schmucker D,True,False,Junior PI,Newcomer,schmucker d
+597,2169,Anderson KV,True,False,Senior PI,Experienced,anderson kv
+655,2118,Watnick PI,True,False,Junior PI,Newcomer,watnick pi
+637,2135,McGettigan J,False,True,Post-doc,Newcomer,mcgettigan j
+591,1787,Carney GE,True,False,Junior PI,Newcomer,carney ge
+592,1712,Brown AE,False,True,PhD,Experienced,brown ae
+594,1610,Markovic MP,False,True,PhD,Experienced,markovic mp
+595,1610,Dushay MS,True,False,Junior PI,Experienced,dushay ms
+598,1956,Brennan CA,False,True,Post-doc,Experienced,brennan ca
+603,3442,Wasserman SA,True,False,Senior PI,Experienced,wasserman sa
+606,3441,Bhaskar V,False,True,PhD,Experienced,bhaskar v
+610,2222,Foley E,False,True,Post-doc,Newcomer,foley e
+612,2214,Chang CI,False,True,PhD,Experienced,chang ci
+622,3454,Chen J,True,False,Junior PI,Newcomer,chen j
+624,2269,Vierstraete E,False,True,PhD,Newcomer,vierstraete e
+634,2086,Castillejo-López C,False,True,Post-doc,Newcomer,castillejo-lopez c
+636,1948,Schneider DS,True,False,Senior PI,Experienced,schneider ds
+641,1518,Avet-Rochex A,False,True,PhD,Experienced,avet-rochex a
+642,1518,Waltzer L,True,False,Junior PI,Experienced,waltzer l
+652,3443,Chang CI,False,True,PhD,Newcomer,chang ci
+653,3443,Deisenhofer J,True,False,Senior PI,Newcomer,deisenhofer j
+657,1675,Watnick PI,True,False,Junior PI,Newcomer,watnick pi
+659,1669,Promislow DE,True,False,Junior PI,Newcomer,promislow de
+663,1815,Tang AH,True,False,Junior PI,Newcomer,tang ah
+667,1672,Gueydan C,True,False,Junior PI,Newcomer,gueydan c
+675,1555,Anderson KV,True,False,Senior PI,Experienced,anderson kv
+585,1937,Wu LP,True,False,Junior PI,Experienced,wu lp
+665,1595,Foley E,True,False,Junior PI,Experienced,foley e
+589,2025,Ge BX,True,False,Junior PI,Newcomer,ge bx
+593,1712,Ligoxygakis P,True,False,Junior PI,Experienced,ligoxygakis p
+607,3441,Courey AJ,True,False,Senior PI,Experienced,courey aj
+608,2197,Takata K,False,True,PhD,Newcomer,takata k
+611,2222,O'Farrell PH,True,False,Senior PI,Newcomer,o'farrell ph
+613,2214,Deisenhofer J,True,False,Senior PI,Experienced,deisenhofer j
+619,3439,Galko MJ,True,False,Junior PI,Newcomer,galko mj
+621,1748,Zhu S,True,False,Senior PI,Newcomer,zhu s
+627,2238,Schoofs L,True,False,Junior PI,Newcomer,schoofs l
+630,2055,Verleyen P,False,True,PhD,Newcomer,verleyen p
+631,2055,Schoofs L,True,False,Junior PI,Newcomer,schoofs l
+646,1598,Fauvarque MO,True,False,Junior PI,Experienced,fauvarque mo
+647,3446,Nappi AJ,True,True,Junior PI,Experienced,nappi aj
+656,1675,Berkey CD,False,True,Post-doc,Newcomer,berkey cd
+658,1669,Linder JE,False,True,PhD,Newcomer,linder je
+669,1827,Edery I,True,False,Junior PI,Newcomer,edery i
+670,1619,Shinzawa N,False,True,PhD,Experienced,shinzawa n
+673,1543,Lazzaro BP,True,False,Senior PI,Experienced,lazzaro bp
+678,2117,Watson FL,False,True,Post-doc,Newcomer,watson fl
+680,1496,Tabuchi Y,False,True,Post-doc,Experienced,tabuchi y
+681,1496,Nakanishi Y,True,False,Senior PI,Experienced,nakanishi y
+682,2660,D'Argenio DA,False,True,Post-doc,Newcomer,d'argenio da
+683,2660,Manoil C,True,False,Senior PI,Newcomer,manoil c
+684,2160,de Morais Guedes S,False,True,PhD,Newcomer,de morais guedes s
+685,2160,Domingues P,True,False,Junior PI,Newcomer,domingues p
+686,1997,Castillejo-López C,True,False,Junior PI,Newcomer,castillejo-lopez c
+687,1997,Mulinari S,False,True,PhD,Newcomer,mulinari s
+688,2007,Yang WY,False,True,PhD,Newcomer,yang wy
+689,2007,Cao Y,True,False,Junior PI,Newcomer,cao y
+690,2114,Peng J,False,True,PhD,Newcomer,peng j
+691,2114,Kubli E,True,False,Senior PI,Newcomer,kubli e
+692,2059,Seong CS,False,True,PhD,Newcomer,seong cs
+693,2059,Aguilera RJ,True,False,Junior PI,Newcomer,aguilera rj
+694,2079,Pelte N,False,True,PhD,Experienced,pelte n
+695,2079,Gubb D,True,False,Junior PI,Experienced,gubb d
+696,2096,Ha EM,False,True,PhD,Experienced,ha em
+697,2096,Lee WJ,True,False,Junior PI,Experienced,lee wj
+738,1591,Schoofs L,True,False,Junior PI,Newcomer,schoofs l
+699,1958,Ezekowitz RA,True,False,Senior PI,Experienced,ezekowitz ra
+701,1990,Anderson KV,True,False,Senior PI,Newcomer,anderson kv
+702,1762,Wegner KM,True,True,Post-doc,Newcomer,wegner km
+703,1642,Wagner C,False,True,PhD,Newcomer,wagner c
+704,1642,Roeder T,True,False,Junior PI,Newcomer,roeder t
+705,2130,Stuart LM,False,True,Post-doc,Newcomer,stuart lm
+707,2320,Lau GW,False,True,PhD,Newcomer,lau gw
+708,2320,Rahme LG,True,False,Junior PI,Newcomer,rahme lg
+709,1737,Sibley CD,False,True,Post-doc,Newcomer,sibley cd
+710,1737,Surette MG,True,False,Junior PI,Newcomer,surette mg
+711,1658,Soukup SF,False,True,PhD,Experienced,soukup sf
+712,1658,Gubb D,True,False,Senior PI,Experienced,gubb d
+713,1756,Gao B,False,True,PhD,Newcomer,gao b
+715,1848,Linder JE,False,True,PhD,Newcomer,linder je
+717,1921,Fedorka KM,False,True,PhD,Newcomer,fedorka km
+718,1921,Promislow DE,True,False,Junior PI,Newcomer,promislow de
+719,2067,Johansson KC,False,True,PhD,Experienced,johansson kc
+721,1722,Malagoli D,False,True,PhD,Newcomer,malagoli d
+722,1722,Ottaviani E,True,False,Senior PI,Newcomer,ottaviani e
+723,1910,Malagoli D,False,True,PhD,Newcomer,malagoli d
+724,1910,Ottaviani E,True,False,Junior PI,Newcomer,ottaviani e
+725,1454,Short SM,False,True,PhD,Experienced,short sm
+726,1454,Lazzaro BP,True,False,Senior PI,Experienced,lazzaro bp
+727,1679,Ren C,False,True,PhD,Newcomer,ren c
+728,1679,Tower J,True,False,Junior PI,Newcomer,tower j
+729,1834,Wigby S,False,True,PhD,Newcomer,wigby s
+730,1834,Chapman T,True,False,Senior PI,Newcomer,chapman t
+731,1476,Lionakis MS,False,True,PhD,Newcomer,lionakis ms
+732,1476,Kontoyiannis DP,True,False,Junior PI,Newcomer,kontoyiannis dp
+733,1534,Haghayeghi A,False,True,PhD,Newcomer,haghayeghi a
+734,1534,Schöck F,True,False,Junior PI,Newcomer,schock f
+735,1781,Vonkavaara M,False,True,PhD,Experienced,vonkavaara m
+736,1781,Stöven S,True,False,Junior PI,Experienced,stoven s
+737,1591,Reumer A,False,True,PhD,Newcomer,reumer a
+739,1611,Wei Y,False,True,PhD,Newcomer,wei y
+740,1611,Ma WJ,True,False,Junior PI,Newcomer,ma wj
+741,1414,Zhao HW,False,True,PhD,Newcomer,zhao hw
+742,1414,Haddad GG,True,False,Junior PI,Newcomer,haddad gg
+743,1423,Wang Zhipeng,False,True,PhD,Newcomer,wang zhipeng
+744,1423,Baron MJ,True,False,Junior PI,Newcomer,baron mj
+745,1535,Abdelsadik A,False,True,PhD,Experienced,abdelsadik a
+746,1535,Roeder T,True,False,Senior PI,Newcomer,roeder t
+747,1673,Winterhalter WE,False,True,PhD,Newcomer,winterhalter we
+748,1673,Fedorka KM,True,False,Junior PI,Newcomer,fedorka km
+749,1697,Guntermann S,False,True,PhD,Newcomer,guntermann s
+750,1697,Foley E,True,False,Junior PI,Experienced,foley e
+751,1739,Wagner C,False,True,PhD,Newcomer,wagner c
+753,1740,Kapelnikov A,False,True,Post-doc,Newcomer,kapelnikov a
+754,1740,Heifetz Y,True,False,Junior PI,Newcomer,heifetz y
+755,2257,Chen HX,False,True,PhD,Newcomer,chen hx
+756,2257,Ma WJ,True,False,Junior PI,Newcomer,ma wj
+752,1739,Roeder T,True,False,Junior PI,Newcomer,roeder t
+716,1848,Promislow DE,True,False,Junior PI,Newcomer,promislow de
+698,1958,Stuart LM,False,True,Post-doc,Experienced,stuart lm
+638,2135,Dow JA,True,False,Senior PI,Newcomer,dow ja
+645,1598,Thevenon D,False,True,Post-doc,Experienced,thevenon d
+714,1756,Zhu S,True,False,Junior PI,Newcomer,zhu s
+720,2067,Söderhäll K,False,False,Senior PI,Experienced,soderhall k
+706,2130,Ezekowitz RA,False,False,Senior PI,Newcomer,ezekowitz ra
+757,1936,Yuan Y,False,True,PhD,Newcomer,yuan y
+760,1935,Yu XQ,True,False,Junior PI,Newcomer,yu xq
+765,1606,Palli SR,True,False,Senior PI,Newcomer,palli sr
+768,1945,Promislow DE,True,False,Senior PI,Newcomer,promislow de
+780,2367,Dafforn TR,True,False,Junior PI,Newcomer,dafforn tr
+783,1491,Zhang Zhenting,False,True,PhD,Newcomer,zhang zhenting
+758,1936,Zhu S,True,False,Junior PI,Newcomer,zhu s
+761,1692,Okado K,False,True,PhD,Experienced,okado k
+766,1606,Zhang Zhaolin,False,True,PhD,Newcomer,zhang zhaolin
+775,1403,Novakova M,False,True,PhD,Experienced,novakova m
+776,1403,Dolezal T,True,False,Junior PI,Experienced,dolezal t
+784,1491,Zhu S,True,False,Junior PI,Newcomer,zhu s
+759,1935,Ao J,False,True,PhD,Newcomer,ao j
+762,1692,Kanuka H,True,False,Junior PI,Experienced,kanuka h
+763,1665,Innocenti P,False,True,PhD,Newcomer,innocenti p
+770,1593,Chapes SK,True,False,Senior PI,Newcomer,chapes sk
+778,1812,Seroude L,True,False,Senior PI,Newcomer,seroude l
+779,2367,Robertson AS,False,True,PhD,Newcomer,robertson as
+764,1665,Morrow EH,True,False,Junior PI,Newcomer,morrow eh
+769,1593,Luce-Fedrow A,False,True,PhD,Newcomer,luce-fedrow a
+774,1700,Vilcinskas A,True,False,Junior PI,Newcomer,vilcinskas a
+777,1812,Ramsden S,False,True,PhD,Newcomer,ramsden s
+781,1523,Wang LN,False,True,PhD,Newcomer,wang ln
+782,1523,Chen DW,True,False,Junior PI,Newcomer,chen dw
+644,1884,Fauvarque MO,True,False,Junior PI,Newcomer,fauvarque mo
+767,1945,Corby-Harris V,False,True,PhD,Newcomer,corby-harris v
+771,1503,Aymeric JL,False,True,PhD,Experienced,aymeric jl
+772,1503,Duvic B,True,False,Junior PI,Experienced,duvic b
+773,1700,Rahnamaeian M,False,True,PhD,Newcomer,rahnamaeian m
+37,2832,Braun A,False,True,PhD,Experienced,braun a
+421,2396,Foley E,False,True,Post-doc,Newcomer,foley e
+122,2575,Irving P,False,True,PhD,Experienced,irving p
+490,2009,Minakhina S,False,True,Post-doc,Experienced,minakhina s
+309,1801,Rämet M,True,False,Senior PI,Experienced,ramet m
+786,2086,Häcker U,True,False,Junior PI,Newcomer,hacker u
+785,2608,Anderson KV,True,False,Senior PI,Experienced,anderson kv
+787,2138,Gay NJ,True,False,Master,Newcomer,gay nj
+788,2313,Gay NJ,True,False,Master,Newcomer,gay nj
+26,2942,Meister M,True,False,Senior PI,Experienced,meister m
+258,2325,Schneider DS,True,False,Junior PI,Experienced,schneider ds
+789,1933,Theopold U,True,False,Senior PI,Experienced,theopold u
+790,1763,Gordon MD,False,True,Master,Newcomer,gordon md
+791,2113,Gordon MD,False,True,PhD,Experienced,gordon md
+481,2572,Tauszig S,False,True,PhD,Experienced,tauszig s
+793,2113,Nusse R,True,False,Senior PI,Newcomer,nusse r
+794,1763,Nusse R,True,False,Senior PI,Newcomer,nusse r
+795,2451,Brey PT,True,False,Senior PI,Experienced,brey pt
+792,3273,Bellotti RA,False,False,Master,Newcomer,bellotti ra
+796,3440,Boccard F,True,False,Senior PI,Experienced,boccard f
+797,2067,Cerenius L,True,False,Senior PI,Experienced,cerenius l
+798,2122,Higgins DE,True,False,Senior PI,Newcomer,higgins de
+799,2184,Mengin-Lecreulx D,True,False,Senior PI,Experienced,mengin-lecreulx d
+800,2130,Moore KJ,True,False,Junior PI,Newcomer,moore kj
+700,1990,Matova N,False,True,Post-doc,Newcomer,matova n

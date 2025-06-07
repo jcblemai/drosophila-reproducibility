@@ -3,5 +3,7 @@
 __pycache__/
 figures/
 input_data/
-preprocessed_data/  
+#preprocessed_data/  
 .aider*
+preprocessed_data/claims_db.csv
+preprocessed_data/dfs.pickle

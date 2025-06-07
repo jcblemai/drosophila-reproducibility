@@ -224,12 +224,12 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
     
     # Apply categorizations based on specified detail level
     if use_expanded:
-        df_copy.loc[:, 'assessment_group'] = df_copy['assessment_type'].apply(group_detailed_assessment)
+        df_copy.loc[:, 'assessment_type_grouped'] = df_copy['assessment_type'].apply(group_detailed_assessment)
         assessment_order = ASSESSMENT_ORDER_EXPANDED
         assessment_colors = ASSESSMENT_COLORS_EXPANDED
         # Category mapping is globally defined for expanded mode
     else:
-        df_copy.loc[:, 'assessment_group'] = df_copy['assessment_type'].apply(group_assessment)
+        df_copy.loc[:, 'assessment_type_grouped'] = df_copy['assessment_type'].apply(group_assessment)
         assessment_order = ASSESSMENT_ORDER
         assessment_colors = ASSESSMENT_COLORS
         category_mapping = {cat: cat for cat in ASSESSMENT_ORDER}  # Identity mapping
@@ -246,21 +246,21 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
         x_label = 'Journal Category'
     
     # Filter out rows with missing values
-    filtered_df = df_copy[df_copy['group_by'].notna() & df_copy['assessment_group'].notna()].copy()
+    filtered_df = df_copy[df_copy['group_by'].notna() & df_copy['assessment_type_grouped'].notna()].copy()
     print(f"Using {len(filtered_df)} of {len(df_copy)} rows")
     if len(filtered_df) != len(df_copy):
         print("🛑 missing rows:")
-        print(df_copy[~(df_copy['group_by'].notna() & df_copy['assessment_group'].notna())][["assessment_group", "group_by"]])
+        print(df_copy[~(df_copy['group_by'].notna() & df_copy['assessment_type_grouped'].notna())][["assessment_type_grouped", "group_by"]])
     
     # Add standard category column for aggregation
-    filtered_df.loc[:, 'standard_category'] = filtered_df['assessment_group'].map(lambda x: category_mapping.get(x, x))
+    filtered_df.loc[:, 'standard_category'] = filtered_df['assessment_type_grouped'].map(lambda x: category_mapping.get(x, x))
     
     # Create pivot tables
     detailed_pivot = pd.pivot_table(
         filtered_df,
         values='article_id',
         index='group_by',
-        columns='assessment_group',
+        columns='assessment_type_grouped',
         aggfunc='count',
         fill_value=0
     )

@@ -30,15 +30,12 @@ major_claims_df
 major_claims_df[["year"]].value_counts()
 
 # %%
-# Apply categorizations - using .loc to avoid SettingWithCopyWarning
-major_claims_df.loc[:, 'journal_category'] = major_claims_df['impact_factor'].apply(plot_info.categorize_journal)
-major_claims_df.loc[:, 'assessment_group'] = major_claims_df['assessment_type'].apply(plot_info.group_assessment)
 
 # Display distribution of journal categories
 print(f"Journal Category Distribution:")
 print(major_claims_df['journal_category'].value_counts())
 print("\nAssessment Group Distribution:")
-print(major_claims_df['assessment_group'].value_counts())
+print(major_claims_df['assessment_type_grouped'].value_counts())
 
 
 # %%
@@ -652,18 +649,18 @@ to_plot
 # %%
 # Create a copy to avoid modifying the original
 ranking_df = major_claims_df.copy()
-
-# Use numpy.select to create categories based on conditions
-conditions = [
-    (ranking_df['shangai_ranking_2010'] <= 50) & (~pd.isna(ranking_df['shangai_ranking_2010'])),
-    (ranking_df['shangai_ranking_2010'] > 50) & (ranking_df['shangai_ranking_2010'] <= 100),
-    (ranking_df['shangai_ranking_2010'] > 100)  & (~pd.isna(ranking_df['shangai_ranking_2010']))
-]
-
-choices = ['Top 50', '51-100', '101+']
-
-# Create ranking category column, defaulting to "Not Ranked" for NA values
-ranking_df['ranking_category'] = np.select(conditions, choices, default='Not Ranked')
+# 
+# # Use numpy.select to create categories based on conditions
+# conditions = [
+#     (ranking_df['shangai_ranking_2010'] <= 50) & (~pd.isna(ranking_df['shangai_ranking_2010'])),
+#     (ranking_df['shangai_ranking_2010'] > 50) & (ranking_df['shangai_ranking_2010'] <= 100),
+#     (ranking_df['shangai_ranking_2010'] > 100)  & (~pd.isna(ranking_df['shangai_ranking_2010']))
+# ]
+# 
+# choices = ['Top 50', '51-100', '101+']
+# 
+# # Create ranking category column, defaulting to "Not Ranked" for NA values
+# ranking_df['ranking_category'] = np.select(conditions, choices, default='Not Ranked')
 
 variable = "ranking_category"
 var_grouped = wrangling.create_author_metric(claim_df = ranking_df, 
