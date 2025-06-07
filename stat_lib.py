@@ -10,63 +10,55 @@ from statsmodels.genmod.families import Binomial
 import bambi as bmb
 import matplotlib.pyplot as plt
 
-# ---------- frequentist (cluster-robust) -------------
-def fit_glm_cluster(df, fixed_effects, outcome='challenged_flag',
-                    cluster_cols=('first_author_key', 'leading_author_key')):
-
-    # 1. -------- collect raw variable names -----------------
-    needed_cols = {outcome}
-    for term in fixed_effects:
-        if term.startswith('C('):
-            needed_cols.add(term[2:].strip('()'))          # C(Sex_lh) -> Sex_lh
-        elif term.startswith('scale('):
-            needed_cols.add(term[6:].strip('()'))          # scale(year_fh) -> year_fh
-        else:
-            needed_cols.add(term.split(':')[0])            # plain or interaction (keep first part)
-
-    # 2. -------- verify they exist --------------------------
-    missing = needed_cols - set(df.columns)
-    if missing:
-        raise KeyError(f"Missing columns in dataframe: {missing}")
-
-    ## 3. -------- drop rows with NA only on those -------------
-    df_clean = df.copy()
-    #df_clean = df.dropna(subset=needed_cols)
-    #if df_clean.empty:
-    #    raise ValueError("No rows left after dropping NAs – check missingness.")
-
-    # 4. -------- build formula & design matrices ------------
-    formula = outcome + ' ~ ' + ' + '.join(fixed_effects)
-    y, X = patsy.dmatrices(formula, df_clean, return_type='dataframe')
-
-    # 5. -------- fit GLM with cluster-robust SE -------------
-    clusters = (
-        df_clean[list(cluster_cols)]
-        .astype(str)                      # cast every element to string
-        .fillna("NA")                     # replace nan -> "NA"
-        .agg("__".join, axis=1)           # join into one string label
-    )
-    model = sm.GLM(y, X, family=Binomial()).fit(
-                cov_type='cluster',
-                cov_kwds={'groups': clusters})
-    return model
-
-# ---------- Bayesian hierarchical via Bambi / PyMC ----
-def fit_bayesian_mixed(df, fixed_effects, outcome='challenged_flag',
-                       group_first='first_author_key', group_last='leading_author_key',
-                       draws=2000, tune=1000, cores=4, seed=42):
+# Dataset covariate summary
+def analyze_covariates(df):
     """
-    Logistic mixed model with random intercepts for first & last author.
-    Requires bambi (PyMC).  Returns the fitted model and the InferenceData.
+    Analyze covariates in the dataset and provide detailed summary
     """
+    print(f"Dataset has {len(df)} rows\n")
     
+    # Define covariate categories
+    categories = {
+        "ID": ["id"],
+        "First author covariates": [
+            "first_author_key", "First Author Sex", "PhD Post-doc"
+        ],
+        "Leading author covariates": [
+            "leading_author_key", "Historical lab after 1998", "Continuity", 
+            "Leading Author Sex", "Junior Senior", "F and L", "first_paper_year","first_paper_before_1995"
+        ],
+        "Paper covariates": [
+            "year", "year_binned", "journal_category", "ranking_category"
+        ],
+        "Outcome": [
+            "assessment_type_grouped"
+        ]
+    }
+    
+    for category, columns in categories.items():
+        print(f"# {category}")
+        
+        for col in columns:
+            if col in df.columns:
+                # Calculate missing values
+                missing_count = df[col].isna().sum()
+                total_count = len(df)
+                
+                # Calculate unique values
+                unique_values = df[col].dropna().unique()
+                n_unique = len(unique_values)
+                
+                # Print column info
+                if n_unique <= 5:
+                    # Show actual values if 5 or fewer
+                    values_str = ", ".join([str(v) for v in sorted(unique_values)])
+                    print(f"  - {col}: {values_str} ({missing_count} missing, {n_unique} unique)")
+                else:
+                    # Show count if more than 5
+                    print(f"  - {col}: {n_unique} unique values ({missing_count} missing)")
+        
+        print()  # Empty line between categories
 
-    fixed_formula = ' + '.join(fixed_effects) if fixed_effects else '1'
-    formula = f"{outcome} ~ {fixed_formula} + (1|{group_first}) + (1|{group_last})"
-
-    model = bmb.Model(formula, df, family='bernoulli')
-    idata = model.fit(draws=draws, tune=tune, cores=cores, random_seed=seed)
-    return model, idata
 
 def report_proportion(successes, total, confidence=0.95, end_sentence="of tested claims were irreproducible."):
     """
