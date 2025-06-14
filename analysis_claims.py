@@ -875,6 +875,269 @@ fig, ax = plot_info.create_publication_scatter(
 )
 
 # %%
+# Import stat_lib functions for statistical reporting
+import stat_lib
+
+# %%
+# Journal proportions and statistical comparisons
+print("=== JOURNAL CATEGORY PROPORTIONS AND COMPARISONS ===\n")
+
+# Calculate proportions for each journal category (using plot order)
+journal_categories = ['Low Impact', 'High Impact', 'Trophy Journals']  # From plot_info.py line 245
+print("1. PROPORTIONS BY JOURNAL CATEGORY:")
+print("-" * 50)
+
+for category in journal_categories:
+    category_data = major_claims_df[major_claims_df['journal_category'] == category]
+    challenged_count = len(category_data[category_data['assessment_type_grouped'] == 'Challenged'])
+    total_count = len(category_data)
+    
+    proportion_report = stat_lib.report_proportion(
+        successes=challenged_count,
+        total=total_count,
+        end_sentence=f"of {category} claims were challenged."
+    )
+    print(f"{category}: {proportion_report}")
+
+print("\n2. STATISTICAL COMPARISONS (using Low-Impact as baseline):")
+print("-" * 60)
+
+# Create summary data for comparisons
+category_summary = major_claims_df.groupby('journal_category').agg({
+    'assessment_type_grouped': lambda x: (x == 'Challenged').sum(),  # Count of challenged
+    'journal_category': 'count'  # Total count
+}).rename(columns={'assessment_type_grouped': 'Challenged', 'journal_category': 'Major claims'})
+
+# High-Impact vs Low-Impact comparison
+if 'High Impact' in category_summary.index and 'Low Impact' in category_summary.index:
+    comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+        var_grouped=category_summary,
+        labels=['High Impact', 'Low Impact'],
+        outcome='Challenged',
+        what_str="High-impact vs low-impact journal category"
+    )
+    print("High-Impact vs Low-Impact:")
+    print(comparison_sentence)
+    print()
+
+# Trophy vs Low-Impact comparison
+if 'Trophy Journals' in category_summary.index and 'Low Impact' in category_summary.index:
+    comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+        var_grouped=category_summary,
+        labels=['Trophy Journals', 'Low Impact'],
+        outcome='Challenged',
+        what_str="Trophy vs low-impact journal category"
+    )
+    print("Trophy vs Low-Impact:")
+    print(comparison_sentence)
+    print()
+
+# Trophy vs High-Impact comparison  
+if 'Trophy Journals' in category_summary.index and 'High Impact' in category_summary.index:
+    comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+        var_grouped=category_summary,
+        labels=['Trophy Journals', 'High Impact'],
+        outcome='Challenged',
+        what_str="Trophy vs high-impact journal category"
+    )
+    print("Trophy vs High-Impact:")
+    print(comparison_sentence)
+
+# %%
+# UNCHALLENGED CLAIMS ANALYSIS
+print("\n=== UNCHALLENGED CLAIMS PROPORTIONS AND COMPARISONS ===\n")
+
+# Calculate proportions for unchallenged claims by journal category
+print("1. UNCHALLENGED PROPORTIONS BY JOURNAL CATEGORY:")
+print("-" * 50)
+
+for category in journal_categories:  # Using same order as above
+    category_data = major_claims_df[major_claims_df['journal_category'] == category]
+    unchallenged_count = len(category_data[category_data['assessment_type_grouped'] == 'Unchallenged'])
+    total_count = len(category_data)
+    
+    proportion_report = stat_lib.report_proportion(
+        successes=unchallenged_count,
+        total=total_count,
+        end_sentence=f"of {category} claims were unchallenged."
+    )
+    print(f"{category}: {proportion_report}")
+
+print("\n2. UNCHALLENGED STATISTICAL COMPARISONS (using Low-Impact as baseline):")
+print("-" * 70)
+
+# Create summary data for unchallenged comparisons
+unchallenged_summary = major_claims_df.groupby('journal_category').agg({
+    'assessment_type_grouped': lambda x: (x == 'Unchallenged').sum(),  # Count of unchallenged
+    'journal_category': 'count'  # Total count
+}).rename(columns={'assessment_type_grouped': 'Unchallenged', 'journal_category': 'Major claims'})
+
+# High-Impact vs Low-Impact comparison for unchallenged
+if 'High Impact' in unchallenged_summary.index and 'Low Impact' in unchallenged_summary.index:
+    comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+        var_grouped=unchallenged_summary,
+        labels=['High Impact', 'Low Impact'],
+        outcome='Unchallenged',
+        what_str="High-impact vs low-impact journal category"
+    )
+    print("High-Impact vs Low-Impact (Unchallenged):")
+    print(comparison_sentence)
+    print()
+
+# Trophy vs Low-Impact comparison for unchallenged
+if 'Trophy Journals' in unchallenged_summary.index and 'Low Impact' in unchallenged_summary.index:
+    comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+        var_grouped=unchallenged_summary,
+        labels=['Trophy Journals', 'Low Impact'],
+        outcome='Unchallenged',
+        what_str="Trophy vs low-impact journal category"
+    )
+    print("Trophy vs Low-Impact (Unchallenged):")
+    print(comparison_sentence)
+    print()
+
+# Trophy vs High-Impact comparison for unchallenged
+if 'Trophy Journals' in unchallenged_summary.index and 'High Impact' in unchallenged_summary.index:
+    comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+        var_grouped=unchallenged_summary,
+        labels=['Trophy Journals', 'High Impact'],
+        outcome='Unchallenged',
+        what_str="Trophy vs high-impact journal category"
+    )
+    print("Trophy vs High-Impact (Unchallenged):")
+    print(comparison_sentence)
+
+# %%
+# UNIVERSITY RANKING ANALYSIS - CHALLENGED CLAIMS
+print("\n=== UNIVERSITY RANKING CHALLENGED CLAIMS ANALYSIS ===\n")
+
+# Calculate proportions for challenged claims by university ranking (using plot order)
+university_rankings = ['Top 50', '51-100', '101+', 'Not Ranked']  # From labels_map order in plotting
+print("1. CHALLENGED PROPORTIONS BY UNIVERSITY RANKING:")
+print("-" * 55)
+
+for ranking in university_rankings:
+    ranking_data = major_claims_df[major_claims_df['ranking_category'] == ranking]
+    challenged_count = len(ranking_data[ranking_data['assessment_type_grouped'] == 'Challenged'])
+    total_count = len(ranking_data)
+    
+    proportion_report = stat_lib.report_proportion(
+        successes=challenged_count,
+        total=total_count,
+        end_sentence=f"of {ranking} university claims were challenged."
+    )
+    print(f"{ranking}: {proportion_report}")
+
+print("\n2. UNIVERSITY RANKING STATISTICAL COMPARISONS (using Not Ranked as baseline):")
+print("-" * 80)
+
+# Create summary data for university ranking comparisons
+university_summary = major_claims_df.groupby('ranking_category').agg({
+    'assessment_type_grouped': lambda x: (x == 'Challenged').sum(),  # Count of challenged
+    'ranking_category': 'count'  # Total count
+}).rename(columns={'assessment_type_grouped': 'Challenged', 'ranking_category': 'Major claims'})
+
+# Top 50 vs Not Ranked comparison
+if 'Top 50' in university_summary.index and 'Not Ranked' in university_summary.index:
+    comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+        var_grouped=university_summary,
+        labels=['Top 50', 'Not Ranked'],
+        outcome='Challenged',
+        what_str="Top 50 vs not ranked university"
+    )
+    print("Top 50 vs Not Ranked:")
+    print(comparison_sentence)
+    print()
+
+# 51-100 vs Not Ranked comparison
+if '51-100' in university_summary.index and 'Not Ranked' in university_summary.index:
+    comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+        var_grouped=university_summary,
+        labels=['51-100', 'Not Ranked'],
+        outcome='Challenged',
+        what_str="51-100 ranked vs not ranked university"
+    )
+    print("51-100 vs Not Ranked:")
+    print(comparison_sentence)
+    print()
+
+# 101+ vs Not Ranked comparison
+if '101+' in university_summary.index and 'Not Ranked' in university_summary.index:
+    comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+        var_grouped=university_summary,
+        labels=['101+', 'Not Ranked'],
+        outcome='Challenged',
+        what_str="101+ ranked vs not ranked university"
+    )
+    print("101+ vs Not Ranked:")
+    print(comparison_sentence)
+
+# %%
+# TIME PERIOD ANALYSIS - CHALLENGED CLAIMS
+print("\n=== TIME PERIOD CHALLENGED CLAIMS ANALYSIS ===\n")
+
+# Calculate proportions for challenged claims by time period (using plot order)
+time_periods = ['≤1991', '1992-1996', '1997-2001', '2002-2006', '2007-2011']  # From plot_info.py line 240
+print("1. CHALLENGED PROPORTIONS BY TIME PERIOD:")
+print("-" * 45)
+
+for period in time_periods:
+    period_data = major_claims_df[major_claims_df['year_binned'] == period]
+    challenged_count = len(period_data[period_data['assessment_type_grouped'] == 'Challenged'])
+    total_count = len(period_data)
+    
+    proportion_report = stat_lib.report_proportion(
+        successes=challenged_count,
+        total=total_count,
+        end_sentence=f"of {period} claims were challenged."
+    )
+    print(f"{period}: {proportion_report}")
+
+print("\n2. TIME PERIOD STATISTICAL COMPARISONS (pairwise):")
+print("-" * 55)
+
+# Create summary data for time period comparisons
+time_summary = major_claims_df.groupby('year_binned').agg({
+    'assessment_type_grouped': lambda x: (x == 'Challenged').sum(),  # Count of challenged
+    'year_binned': 'count'  # Total count
+}).rename(columns={'assessment_type_grouped': 'Challenged', 'year_binned': 'Major claims'})
+
+# Use predefined time periods in chronological order
+sorted_periods = time_periods  # Already in chronological order
+
+# Compare consecutive time periods
+for i in range(len(sorted_periods) - 1):
+    period1 = sorted_periods[i]
+    period2 = sorted_periods[i + 1]
+    
+    if period1 in time_summary.index and period2 in time_summary.index:
+        comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+            var_grouped=time_summary,
+            labels=[period2, period1],  # Later period vs earlier period
+            outcome='Challenged',
+            what_str=f"{period2} vs {period1} time period"
+        )
+        print(f"{period2} vs {period1}:")
+        print(comparison_sentence)
+        print()
+
+# Also compare lowerst vs most period
+if len(sorted_periods) >= 2:
+    print("ok")
+    earliest = sorted_periods[0]
+    latest = sorted_periods[-2] # minus one is idex of the lowest
+    
+    if earliest != latest and earliest in time_summary.index and latest in time_summary.index:
+        comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+            var_grouped=time_summary,
+            labels=[latest, earliest],
+            outcome='Challenged',
+            what_str=f"{latest} vs {earliest} time period"
+        )
+        print(f"{latest} vs {earliest} (Overall trend):")
+        print(comparison_sentence)
+
+# %%
 
 
 
