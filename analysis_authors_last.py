@@ -192,6 +192,16 @@ for variable in all_categorical_variables.keys():
         print("\n"+sentence+"\n")
         all_comparisons.append({'Variable': variable, **summary})
 
+        if variable == "Continuity":
+            sentence, summary = stat_lib.report_categorical_comparison(var_grouped, 
+                                                                        actual_groups, 
+                                                                        outcome='Unchallenged',
+                                                                        what_str=f"Leading Author {variable} ")
+            print("FOR UNCHALLENGED:\n"+sentence+"\n")
+            print("Summary for unchallenged claims:")
+            print(summary)
+
+
     explain_df = leading_author_claims_to_plot.groupby(["Leading Author Name", variable]).agg(**{
         "Major claims":('id', 'count'),
         "Articles":('article_id', 'nunique')
@@ -344,6 +354,9 @@ import preprocess_utils
 
 # %%
 first_papers_year = {}
+first_lh_or_fh_papers_year = {}
+first_author_claims = pd.read_csv("preprocessed_data/first_author_claims.csv")
+
 claims_sorted = preprocess_utils.build_author_key(leading_author_claims, "authors_txt", "all_authors_key")
 claims_sorted = claims_sorted.sort_values(by=['year']).reset_index(drop=True)
 claims_sorted["year"].plot()
@@ -358,7 +371,31 @@ for lh in leading_author_claims["leading_author_key"].unique():
             break  # Break out of the inner loop once we find the first paper
     if not found:
         print(f"Warning: No papers found for author {lh}")
+    
+    # Use skipna=True to ignore NaN/NA values, and check for empty series
+    fh_series = first_author_claims[first_author_claims["first_author_key"] == lh]["year"]
+    lh_series = claims_sorted[claims_sorted["leading_author_key"] == lh]["year"]
+    
+    fh_year = fh_series.min(skipna=True) if not fh_series.empty else None
+    lh_year = lh_series.min(skipna=True) if not lh_series.empty else None
+    
+    # Check if the results are valid (not NaN/NA)
+    fh_year = fh_year if pd.notna(fh_year) else None
+    lh_year = lh_year if pd.notna(lh_year) else None
+    
+    if fh_year is not None and lh_year is not None:
+        first_lh_or_fh_papers_year[lh] = min(fh_year, lh_year)
+    elif fh_year is not None:
+        first_lh_or_fh_papers_year[lh] = fh_year
+    elif lh_year is not None:
+        first_lh_or_fh_papers_year[lh] = lh_year
+    else:
+        print(f"Warning: No paper found for author {lh} in either first or leading author roles")                
 first_papers_year = pd.DataFrame.from_dict(first_papers_year, orient='index', columns=['first_paper_year'])
+first_lh_or_fh_papers_year = pd.DataFrame.from_dict(first_lh_or_fh_papers_year, orient='index', columns=['first_lh_or_fh_paper_year'])
+first_papers_year = first_papers_year.merge(first_lh_or_fh_papers_year,  left_index=True, right_index=True, how='outer')
+
+first_papers_year.plot()
 # save it for the statistical analysis
 first_papers_year.to_csv("preprocessed_data/lh_first_papers_year.csv", sep=";", index_label="leading_author_key")
 # %%
@@ -367,7 +404,7 @@ to_plot = pd.merge(first_papers_year, author_metrics, left_index=True, right_on=
 # %%
 fig, ax = plot_info.create_publication_scatter(
     to_plot,
-    x_var='first_paper_year', 
+    x_var='first_lh_or_fh_paper_year', 
     y_var='Challenged prop',
     size_var='Articles', 
     title='proportion Challenged vs. year of first paper',
@@ -486,8 +523,8 @@ from plot_info import MEDIUM_SIZE
 
 # Filter identical to standalone plots (≥ 2 articles & ≥ 6 major claims)
 to_plot_lead = author_metrics.copy()
-to_plot_lead = to_plot_lead[(to_plot_lead["Articles"] >= 2) &
-                            (to_plot_lead["Major claims"] >= 6)]
+#to_plot_lead = to_plot_lead[(to_plot_lead["Articles"] >= 2) &
+#                            (to_plot_lead["Major claims"] >= 6)]
 
 fig6 = plt.figure(figsize=(18, 6))
 gs6  = gridspec.GridSpec(1, 2, width_ratios=[1, 1], wspace=0.15)
@@ -500,6 +537,7 @@ plot_info.plot_lorenz_curve(
     to_plot_lead,
     prop_column="Challenged prop",
     weight_column="Major claims",
+    #print_top_txt=False,
     title="",
     ax=ax6A,
 )
@@ -513,6 +551,7 @@ plot_info.plot_author_irreproducibility_focused(
     cmap="RdYlGn",
     most_challenged_on_right=True,
     name_col="Leading Author Name",
+    annotate_top_n=0,
     ax=ax6B,
 )
 ax6B.set_title("B", loc="left", fontweight="bold", fontsize=28)
@@ -655,7 +694,7 @@ from plot_info import MEDIUM_SIZE
 # Prepare data for panel A - year vs reproducibility (already exists in the code above)
 # Apply the same filtering as in the individual panels (≥2 articles & ≥6 major claims)
 to_plot_year = pd.merge(first_papers_year, author_metrics, left_index=True, right_on='leading_author_key', how='right')
-to_plot_year = to_plot_year[(to_plot_year["Articles"] >= 2) & (to_plot_year["Major claims"] >= 6)]
+#to_plot_year = to_plot_year[(to_plot_year["Articles"] >= 2) & (to_plot_year["Major claims"] >= 6)]
 
 # ── Choose the two categorical variables for B & C using the same approach as Figure 7 ──
 varB = "F and L"
@@ -703,7 +742,7 @@ ax8C = fig8.add_subplot(gs8[:, 1])                # right (span rows)
 # Panel A - Year vs reproducibility scatter plot
 # Create scatter plot without size legend first
 scatter = ax8C.scatter(
-    to_plot_year['first_paper_year'],
+    to_plot_year['first_lh_or_fh_paper_year'],
     to_plot_year['Challenged prop'],
     s=to_plot_year['Articles'] * 15,  # Size by Articles
     c='#3498db',  # Default blue
@@ -712,23 +751,23 @@ scatter = ax8C.scatter(
     linewidth=0.5
 )
 
-# Add regression line
-from scipy import stats
-slope, intercept, r_value, p_value, std_err = stats.linregress(
-    to_plot_year['first_paper_year'], to_plot_year['Challenged prop']
-)
-x_line = np.linspace(to_plot_year['first_paper_year'].min(), to_plot_year['first_paper_year'].max(), 100)
-y_line = intercept + slope * x_line
-ax8C.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
-
-# Add regression statistics
-stats_text = f"$r^2$ = {r_value**2:.3f}\\n"
-stats_text += f"p = {p_value:.3e}" if p_value < 0.001 else f"p = {p_value:.3f}"
-stats_text += "\\n" + f"y = {slope:.3f}x + {intercept:.3f}"
-ax8C.text(0.05, 0.95, stats_text, transform=ax8C.transAxes, 
-           va='top', ha='left', fontsize=12, 
-           bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.5'))
-
+# # Add regression line
+# from scipy import stats
+# slope, intercept, r_value, p_value, std_err = stats.linregress(
+#     to_plot_year['first_lh_or_fh_paper_year'], to_plot_year['Challenged prop']
+# )
+# x_line = np.linspace(to_plot_year['first_lh_or_fh_paper_year'].min(), to_plot_year['first_lh_or_fh_paper_year'].max(), 100)
+# y_line = intercept + slope * x_line
+# ax8C.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
+# 
+# # Add regression statistics
+# stats_text = f"$r^2$ = {r_value**2:.3f}\\n"
+# stats_text += f"p = {p_value:.3e}" if p_value < 0.001 else f"p = {p_value:.3f}"
+# stats_text += "\\n" + f"y = {slope:.3f}x + {intercept:.3f}"
+# ax8C.text(0.05, 0.95, stats_text, transform=ax8C.transAxes, 
+#            va='top', ha='left', fontsize=12, 
+#            bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.5'))
+# 
 # Create size legend on the scatter plot itself (middle left)
 sizes = [5, 10, 20, 30]
 legend_elements = []
@@ -867,7 +906,7 @@ lg9.remove()
 # Panel B - Challenged vs Unchallenged scatter
 plot_info.create_challenged_vs_unchallenged_scatter(
     scatter_df_fig9,
-    annotate_top_n=8,
+    annotate_top_n=0,
     title="",
     size_mult=100,
     name_col="Leading Author Name",
@@ -895,4 +934,96 @@ fig9.tight_layout()
 fig9.savefig("figures/fig9_AB_continuity_layout.png",
              dpi=300, bbox_inches="tight")
 print("Saved → figures/fig9_AB_continuity_layout.png")
+
+# %%
+# Statistical analysis: Compare challenged claims before vs after 1995
+print("\n=== STATISTICAL ANALYSIS: PRE-1995 vs POST-1995 ENTRY ===\n")
+
+# Filter to_plot_year to remove rows with missing first_lh_or_fh_paper_year
+analysis_data = to_plot_year.dropna(subset=['first_lh_or_fh_paper_year']).copy()
+
+# Create binary variable for entry before/after 1995
+analysis_data['entry_before_1995'] = analysis_data['first_lh_or_fh_paper_year'] < 1995
+
+# Print summary statistics
+print("Sample sizes:")
+pre_1995_count = len(analysis_data[analysis_data['entry_before_1995'] == True])
+post_1995_count = len(analysis_data[analysis_data['entry_before_1995'] == False])
+print(f"Authors entering before 1995: {pre_1995_count}")
+print(f"Authors entering 1995 or after: {post_1995_count}")
+
+# Group by entry period and calculate challenged claims
+entry_summary = analysis_data.groupby('entry_before_1995').agg({
+    'Challenged': 'sum',           # Total challenged claims
+    'Major claims': 'sum',         # Total claims
+    'leading_author_key': 'count'  # Number of authors
+}).rename(columns={'leading_author_key': 'Authors'})
+
+# Add challenged proportion
+entry_summary['Challenged_prop'] = entry_summary['Challenged'] / entry_summary['Major claims']
+
+print(f"\nSummary by entry period:")
+print(entry_summary)
+
+# Report proportions with confidence intervals
+print(f"\n1. PROPORTIONS BY ENTRY PERIOD:")
+print("-" * 40)
+
+for period, is_before in [(False, "1995 or after"), (True, "before 1995")]:
+    period_data = analysis_data[analysis_data['entry_before_1995'] == period]
+    challenged_count = period_data['Challenged'].sum()
+    total_count = period_data['Major claims'].sum()
+    
+    proportion_report = stat_lib.report_proportion(
+        successes=challenged_count,
+        total=total_count,
+        end_sentence=f"of claims from authors entering {is_before} were challenged."
+    )
+    print(f"Authors entering {is_before}: {proportion_report}")
+
+# Statistical comparison using report_categorical_comparison
+print(f"\n2. STATISTICAL COMPARISON:")
+print("-" * 30)
+
+# Prepare data for comparison (need to have the right index structure)
+comparison_data = entry_summary.copy()
+comparison_data.index = ['Post-1995', 'Pre-1995']  # Rename for clarity
+
+comparison_sentence, comparison_summary = stat_lib.report_categorical_comparison(
+    var_grouped=comparison_data,
+    labels=['Pre-1995', 'Post-1995'],  # Pre-1995 vs Post-1995
+    outcome='Challenged',
+    what_str="Entry period (pre-1995 vs post-1995)"
+)
+
+print(comparison_sentence)
+
+# Additional analysis: Show distribution by decade
+print(f"\n3. ADDITIONAL ANALYSIS BY DECADE:")
+print("-" * 35)
+
+# Create decade bins
+analysis_data['decade'] = pd.cut(analysis_data['first_lh_or_fh_paper_year'], 
+                                bins=[1970, 1980, 1990, 1995, 2000, 2010], 
+                                labels=['1970s', '1980s', '1990-1994', '1995-1999', '2000s'],
+                                include_lowest=True)
+
+decade_summary = analysis_data.groupby('decade').agg({
+    'Challenged': 'sum',
+    'Major claims': 'sum',
+    'leading_author_key': 'count'
+}).rename(columns={'leading_author_key': 'Authors'})
+
+decade_summary['Challenged_prop'] = decade_summary['Challenged'] / decade_summary['Major claims']
+
+print("Summary by decade of entry:")
+for decade in decade_summary.index:
+    if pd.notna(decade):
+        challenged = decade_summary.loc[decade, 'Challenged']
+        total = decade_summary.loc[decade, 'Major claims']
+        authors = decade_summary.loc[decade, 'Authors']
+        prop = decade_summary.loc[decade, 'Challenged_prop']
+        print(f"{decade}: {authors} authors, {challenged}/{total} challenged ({prop:.1%})")
+
+# %%
 

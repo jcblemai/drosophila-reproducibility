@@ -1173,6 +1173,7 @@ def plot_author_irreproducibility_focused(
     cmap='viridis',
     most_challenged_on_right=True,
     name_col='Name',
+    annotate_top_n=5,
     ax=None
 ):
     """
@@ -1250,7 +1251,7 @@ def plot_author_irreproducibility_focused(
                    label=f'{s} Claims')
     
     # Label some notable authors (top 5 with highest proportion)
-    top_authors = sorted_df.head(5)
+    top_authors = sorted_df.head(annotate_top_n)
     for _, row in top_authors.iterrows():
         ax.annotate(
             row[name_col],
@@ -1405,7 +1406,9 @@ def plot_lorenz_curve(
     title="Distribution Inequality of Challenged Claims",
     fig_size=(10, 6),
     color='#e74c3c',
-    ax=None
+    ax=None,
+    print_gini=True,
+    print_top_txt=True
 ):
     """
     Create a Lorenz curve to visualize inequality in the distribution of challenged claims.
@@ -1472,8 +1475,9 @@ def plot_lorenz_curve(
     gini = 1 - 2 * np.trapz(df['lorenz_cum_challenged'], df['lorenz_cum_authors'])
     
     # Add Gini coefficient as text
-    ax.text(0.05, 0.75, f"Gini Coefficient: {gini:.3f}", transform=ax.transAxes, ha='left',
-           fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+    if print_gini:
+        ax.text(0.05, 0.75, f"Gini Coefficient: {gini:.3f}", transform=ax.transAxes, ha='left',
+            fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
     # Add cumulative contribution lines
     n = len(df)
@@ -1498,9 +1502,9 @@ def plot_lorenz_curve(
         ax.annotate(f"{pct:.0%}", 
                 (df['lorenz_cum_authors'].iloc[idx], df['lorenz_cum_challenged'].iloc[idx]),
                 xytext=(5, 5), textcoords='offset points', fontsize=12)
-    
-    ax.text(0.05, 0.98, stats_text, transform=ax.transAxes, ha='left', va='top',
-           fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+    if print_top_txt:
+        ax.text(0.05, 0.98, stats_text, transform=ax.transAxes, ha='left', va='top',
+            fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
     # Format axes
     ax.set_xlabel('Cumulative Proportion of Authors', fontweight='bold')
@@ -1823,6 +1827,7 @@ def create_challenged_vs_unchallenged_scatter(
     x_line = np.linspace(0, plot_df['Unchallenged prop'].max()*1.1, 100)
     y_line = intercept + slope * x_line
     ax.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
+
     
     # Add regression statistics
     stats_text = f"$r^2$ = {r_value**2:.3f}\n"

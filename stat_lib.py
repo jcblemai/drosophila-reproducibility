@@ -208,3 +208,20 @@ def forest_plot(glm_res, title="Adjusted odds ratios", ax=None,
     ax.set_title(title)
     plt.tight_layout()
     return ax
+
+# Create separate forest plots
+def create_forest_plot(data, title, color='navy'):
+    if len(data) == 0:
+        return
+    plt.figure(figsize=(8, max(3, len(data)*0.5)))
+    y = np.arange(len(data))
+    plt.errorbar(data['OR'], y,
+                 xerr=[data['OR']-data['OR_low'], data['OR_high']-data['OR']],
+                 fmt='o', color=color, ecolor='lightgray', capsize=3)
+    plt.yticks(y, data.index)
+    plt.axvline(1, ls='--', color='red', alpha=0.7)
+    plt.xlabel("Odds Ratio (log scale)")
+    plt.xscale('log')
+    plt.title(f"Odds Ratios: {title}")
+    plt.tight_layout()
+    plt.show()

@@ -261,8 +261,8 @@ import matplotlib.gridspec as gridspec
 from plot_info import MEDIUM_SIZE
 
 to_plot = author_metrics.copy()
-to_plot = to_plot[to_plot['Articles'] >= 2]
-to_plot = to_plot[to_plot['Major claims'] >= 6]
+# to_plot = to_plot[to_plot['Articles'] >= 2]
+# to_plot = to_plot[to_plot['Major claims'] >= 6]
 
 fig4 = plt.figure(figsize=(18, 6))
 gs4  = gridspec.GridSpec(1, 2, width_ratios=[1, 1], wspace=0.15)
@@ -276,7 +276,9 @@ plot_info.plot_lorenz_curve(
     prop_column='Challenged prop',
     weight_column='Major claims',
     title="",
-    ax=ax4A
+    ax=ax4A,
+    print_gini=True,
+    print_top_txt=False
 )
 ax4A.set_title("A", loc='left', fontweight='bold', fontsize=28)
 
@@ -287,6 +289,7 @@ plot_info.plot_author_irreproducibility_focused(
     color_by='Verified prop',
     cmap='RdYlGn',
     most_challenged_on_right=True,
+    annotate_top_n=0,
     name_col='First Author Name',
     ax=ax4B
 )
@@ -399,7 +402,7 @@ if axB.get_legend():
 to_plot = author_metrics.copy()
 plot_info.create_challenged_vs_articles_scatter(
     to_plot,
-    annotate_top_n=8,
+    annotate_top_n=0,
     title="",
     size_mult=100,
     name_col='First Author Name',
