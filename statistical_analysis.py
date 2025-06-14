@@ -227,7 +227,7 @@ import bambi as bmb
 import patsy
 import arviz as az
 
-
+# %%
 # ---------------------------------------------------------
 #  Step 0  – define the columns actually used in the model
 # ---------------------------------------------------------
@@ -241,17 +241,13 @@ target = ['challenged_flag']
 
 model_vars = fixed_effect_vars + random_effect_vars + target
 
+
+# %%
+
 # ---------------------------------------------------------
 #  Step 1  – drop incomplete rows
 # ---------------------------------------------------------
-df = (
-    all_covar
-    .dropna(subset=model_vars)         # complete-case
-    .reset_index(drop=True)
-)
-
-print(f"Dropped {len(all_covar) - len(df)} incomplete rows "
-    f"({100*(len(all_covar) - len(df))/len(all_covar):.1f} %).")
+df = all_covar.copy()  # make a copy to avoid modifying the original DataFrame
 
 df.columns = df.columns.str.replace(' ', '_', regex=False)
 df.columns = df.columns.str.replace('-', '', regex=False)
@@ -261,7 +257,7 @@ year_splines = patsy.bs(df['year'], df=3, include_intercept=False)
 # patsy.bs returns a design‐matrix; we add columns directly:
 df[['year_s1','year_s2','year_s3']] = pd.DataFrame(year_splines, index=df.index)
 
-df['challenged_flag'] = df['assessment_type_grouped'].eq('Challenged').astype(int)
+df['challenged_flag'] = df['assessment_type_grouped'].eq('Challenged').astype(int) 
 
 
 # %%
@@ -288,7 +284,7 @@ priors = {
     "year_s1": tight_prior, 
     "year_s2": tight_prior, 
     "year_s3": tight_prior,
-    # "Intercept": bmb.Prior("Normal", mu=logit_pi, sigma=1.5) does not changed much.
+    "Intercept": bmb.Prior("Normal", mu=logit_pi, sigma=1.5) #does not changed much.
 }
 
 print(f"Observed challenge rate: {pi:.3f}")
@@ -296,74 +292,54 @@ print(f"Logit of challenge rate: {logit_pi:.3f}")
 print(f"Using intercept prior: Normal({logit_pi:.3f}, 1.5)")
 
 # Weakly-informative Normal(0,2.5) priors on all betas (Bambi default is OK):contentReference[oaicite:5]{index=5}:contentReference[oaicite:6]{index=6}
-model = bmb.Model(formula, df, family="bernoulli", dropna=False)
-
-## VIF check will be done after fitting the model
+model = bmb.Model(formula, df, family="bernoulli", dropna=True)
 
 # Full NUTS sampling
-idata = model.fit(draws=2000, tune=1000, chains=4, cores=4, target_accept=0.9, random_seed=123, priors=priors,)
+idata = model.fit(draws=2000, 
+                tune=1000, 
+                chains=4, 
+                cores=4, 
+                target_accept=0.9, 
+                random_seed=123, 
+                priors=priors,
+                idata_kwargs={"log_likelihood": True}) # for LOO, Leave-One-Out cross-validation, which is probably only useful for model comparison, not for this analysis.
+# Do predictions for PPC
+model.predict(idata, kind="response")
 
+#%%
 # ── Convergence ───────────────────────────────────
 summary_stats = az.summary(idata, round_to=2)          # R-hat, ESS
-print("=== MODEL CONVERGENCE DIAGNOSTICS ===")
-print(summary_stats)
-az.plot_trace(idata, figsize=(12, 8))
+# TODO check ESS > 2000 and R-hat < 1.01
+print(f"min ESS: {summary_stats['ess_bulk'].min():.1f}, max ESS: {summary_stats['ess_bulk'].max():.1f}")
+print(f"min R-hat: {summary_stats['r_hat'].min():.3f}, max R-hat: {summary_stats['r_hat'].max():.3f}")
+
+loo = az.loo(idata, pointwise=True)
+print(loo)
+
+#print(summary_stats)
+#az.plot_trace(idata, figsize=(8, 20));
+
+#%%
+# ── Posterior-predictive check ────────────────────
+ppc_samples = idata.posterior_predictive["challenged_flag"]
+posterior_proportions = ppc_samples.mean(dim=["__obs__"])
+az.plot_posterior(posterior_proportions, hdi_prob=0.94)
+
+# Calculate means
+observed_mean = df['challenged_flag'].mean()
+
+plt.figure(figsize=(8, 5))
+plt.hist(posterior_proportions.values.flatten(), bins=30, alpha=0.7, density=True, color='skyblue', label='PPC samples')
+plt.axvline(observed_mean, color='red', linewidth=2, label=f'Observed mean: {observed_mean:.3f}')
+plt.xlabel('Mean challenged rate')
+plt.ylabel('Density')
+plt.title('Posterior Predictive Check - Mean Challenged Rate')
+plt.legend()
 plt.tight_layout()
 plt.show()
+print(f"PPC completed successfully. Observed mean: {observed_mean:.3f}")
 
-# ── Posterior-predictive check ────────────────────
-print("\n=== POSTERIOR PREDICTIVE CHECK ===")
-try:
-    # Generate posterior predictive samples
-    ppc_data = model.predict(idata, kind="response", data=df)
-    
-    # Extract samples - try different access patterns
-    if hasattr(ppc_data, 'posterior_predictive'):
-        if 'challenged_flag' in ppc_data.posterior_predictive:
-            ppc_samples = ppc_data.posterior_predictive['challenged_flag'].values
-        else:
-            # Try first variable if challenged_flag not found
-            var_name = list(ppc_data.posterior_predictive.data_vars)[0]
-            ppc_samples = ppc_data.posterior_predictive[var_name].values
-    elif hasattr(ppc_data, 'data_vars'):
-        # Direct access to data variables
-        var_name = list(ppc_data.data_vars)[0]
-        ppc_samples = ppc_data[var_name].values
-    else:
-        # Last resort - convert to array
-        ppc_samples = np.array(ppc_data)
-    
-    # Calculate means
-    observed_mean = df['challenged_flag'].mean()
-    
-    # Handle different sample shapes
-    if ppc_samples.ndim > 2:
-        ppc_means = ppc_samples.mean(axis=-1).flatten()
-    else:
-        ppc_means = ppc_samples.mean(axis=-1) if ppc_samples.ndim == 2 else ppc_samples
-    
-    # Create the plot
-    plt.figure(figsize=(8, 5))
-    plt.hist(ppc_means, bins=30, alpha=0.7, density=True, color='skyblue', label='PPC samples')
-    plt.axvline(observed_mean, color='red', linewidth=2, label=f'Observed mean: {observed_mean:.3f}')
-    plt.xlabel('Mean challenged rate')
-    plt.ylabel('Density')
-    plt.title('Posterior Predictive Check - Mean Challenged Rate')
-    plt.legend()
-    plt.tight_layout()
-    plt.show()
-    print(f"PPC completed successfully. Observed mean: {observed_mean:.3f}")
-    
-except Exception as e:
-    print(f"Posterior predictive check failed: {e}")
-    # Fallback simple check
-    try:
-        observed_mean = df['challenged_flag'].mean()
-        print(f"Observed challenged rate: {observed_mean:.3f}")
-        print("PPC plot not available, but model fit completed successfully.")
-    except:
-        pass
-
+# %%
 # ── ODDS RATIOS BY EFFECT CATEGORIES ────────────────────
 print("\n=== ODDS RATIOS ANALYSIS ===")
 posterior = idata.posterior
@@ -389,83 +365,13 @@ print(leading_author_effects[['OR', 'OR_low', 'OR_high']].round(3))
 print("\n--- Paper/Journal Effects ---")
 print(paper_effects[['OR', 'OR_low', 'OR_high']].round(3))
 
-# Create separate forest plots
-def create_forest_plot(data, title, color='navy'):
-    if len(data) == 0:
-        return
-    plt.figure(figsize=(8, max(3, len(data)*0.5)))
-    y = np.arange(len(data))
-    plt.errorbar(data['OR'], y,
-                 xerr=[data['OR']-data['OR_low'], data['OR_high']-data['OR']],
-                 fmt='o', color=color, ecolor='lightgray', capsize=3)
-    plt.yticks(y, data.index)
-    plt.axvline(1, ls='--', color='red', alpha=0.7)
-    plt.xlabel("Odds Ratio (log scale)")
-    plt.xscale('log')
-    plt.title(f"Odds Ratios: {title}")
-    plt.tight_layout()
-    plt.show()
+stat_lib.create_forest_plot(first_author_effects, "First Author Effects", 'blue')
+stat_lib.create_forest_plot(leading_author_effects, "Leading Author Effects", 'green') 
+stat_lib.create_forest_plot(paper_effects, "Paper/Journal Effects", 'orange')
 
-create_forest_plot(first_author_effects, "First Author Effects", 'blue')
-create_forest_plot(leading_author_effects, "Leading Author Effects", 'green') 
-create_forest_plot(paper_effects, "Paper/Journal Effects", 'orange')
 
-# ── ENHANCED POSTERIOR PREDICTIVE CHECK PLOT ────────────────────
-print("\n=== ENHANCED POSTERIOR PREDICTIVE CHECK ===")
-try:
-    # Try to get PPC samples using arviz
-    ppc_data = az.from_dict(posterior_predictive={"y_pred": np.random.binomial(1, 0.4, (4, 2000, len(df)))})
-    
-    # Manual PPC using posterior samples
-    posterior_samples = idata.posterior
-    
-    # Get parameter samples for prediction
-    intercept_samples = posterior_samples['Intercept'].values.flatten()
-    
-    # Simple PPC: generate predictions from posterior
-    n_samples = min(1000, len(intercept_samples))
-    idx = np.random.choice(len(intercept_samples), n_samples, replace=False)
-    
-    # Generate predictions (simplified for illustration)
-    predicted_probs = 1 / (1 + np.exp(-intercept_samples[idx]))  # Just intercept for demo
-    ppc_realizations = [np.random.binomial(1, p, len(df)).mean() for p in predicted_probs]
-    
-    # Create PPC plot
-    plt.figure(figsize=(10, 6))
-    
-    # Plot histogram of PPC realizations
-    plt.hist(ppc_realizations, bins=50, alpha=0.7, density=True, color='lightblue', 
-             label=f'PPC samples (n={n_samples})')
-    
-    # Add observed data line
-    observed_mean = df['challenged_flag'].mean()
-    plt.axvline(observed_mean, color='red', linewidth=3, 
-                label=f'Observed mean: {observed_mean:.3f}')
-    
-    # Add statistics
-    ppc_mean = np.mean(ppc_realizations)
-    ppc_std = np.std(ppc_realizations)
-    plt.axvline(ppc_mean, color='blue', linewidth=2, linestyle='--',
-                label=f'PPC mean: {ppc_mean:.3f}')
-    
-    plt.xlabel('Proportion of Challenged Claims')
-    plt.ylabel('Density')
-    plt.title('Posterior Predictive Check: Distribution of Mean Challenge Rate')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.show()
-    
-    # Calculate Bayesian p-value
-    p_value = np.mean(np.array(ppc_realizations) >= observed_mean)
-    print(f"Bayesian p-value: {p_value:.3f}")
-    print(f"(Proportion of PPC samples ≥ observed mean)")
-    
-except Exception as e:
-    print(f"Enhanced PPC failed: {e}")
-
+# %%
 # ── RANDOM EFFECTS PLOTS ────────────────────
-print("\n=== RANDOM EFFECTS ANALYSIS ===")
 
 # Find all random effect variables
 print("Available random effect variables:")
@@ -474,170 +380,71 @@ for var in re_vars:
     print(f"  - {var}")
 
 # First Author Random Effects
-print("\n--- First Author Random Effects ---")
-try:
-    # Find first author random effects - try both patterns
-    fa_vars = [var for var in posterior.data_vars if 'first_author_key' in var and ('offset' in var or var.endswith('first_author_key'))]
-    
-    if not fa_vars:
-        # Alternative: look for variables containing first_author_key
-        fa_vars = [var for var in posterior.data_vars if 'first_author_key' in var]
-    
-    if fa_vars:
-        fa_var = fa_vars[0]  # Take the first one found
-        print(f"Using variable: {fa_var}")
-        
-        # Summary statistics for all first author effects
-        fa_summary = az.summary(posterior, var_names=[fa_var])
-        
-        # Plot distribution of random effects
-        plt.figure(figsize=(12, 6))
-        
-        # Left panel: Distribution of random effects
-        plt.subplot(1, 2, 1)
-        fa_means = fa_summary['mean'].values
-        plt.hist(fa_means, bins=30, alpha=0.7, color='skyblue', edgecolor='black')
-        plt.axvline(0, color='red', linestyle='--', linewidth=2, label='Zero effect')
-        plt.axvline(fa_means.mean(), color='blue', linestyle='-', linewidth=2, label=f'Mean: {fa_means.mean():.3f}')
-        plt.xlabel('Random Effect (log odds)')
-        plt.ylabel('Count')
-        plt.title('Distribution of First Author Random Effects')
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-        
-        # Right panel: Caterpillar plot (top/bottom effects)
-        plt.subplot(1, 2, 2)
-        fa_summary_sorted = fa_summary.sort_values('mean')
-        
-        # Show top and bottom 15 effects
-        n_show = min(15, len(fa_summary_sorted))
-        top_effects = fa_summary_sorted.tail(n_show)
-        bottom_effects = fa_summary_sorted.head(n_show)
-        combined_effects = pd.concat([bottom_effects, top_effects])
-        
-        y_pos = range(len(combined_effects))
-        plt.errorbar(combined_effects['mean'], y_pos,
-                    xerr=[combined_effects['mean'] - combined_effects['hdi_3%'],
-                          combined_effects['hdi_97%'] - combined_effects['mean']],
-                    fmt='o', capsize=3, color='blue', alpha=0.7)
-        plt.axvline(0, color='red', linestyle='--', alpha=0.7)
-        
-        # Clean up labels
-        labels = []
-        for idx in combined_effects.index:
-            if '[' in idx and ']' in idx:
-                label = idx.split('[')[1].split(']')[0]
-            else:
-                label = idx
-            labels.append(label[:20])  # Truncate long names
-        
-        plt.yticks(y_pos, labels)
-        plt.xlabel('Random Effect (log odds)')
-        plt.title(f'Top/Bottom {n_show} First Author Effects')
-        plt.grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        plt.show()
-        
-        print(f"First author random effects summary:")
-        print(f"  Number of authors: {len(fa_means)}")
-        print(f"  Mean effect: {fa_means.mean():.3f}")
-        print(f"  SD of effects: {fa_means.std():.3f}")
-        print(f"  Range: [{fa_means.min():.3f}, {fa_means.max():.3f}]")
-    else:
-        print("No first author random effects found")
-        
-except Exception as e:
-    print(f"First author random effects plot failed: {e}")
 
-# Leading Author Random Effects  
-print("\n--- Leading Author Random Effects ---")
-try:
-    # Find leading author random effects
-    la_vars = [var for var in posterior.data_vars if 'leading_author_key' in var and ('offset' in var or var.endswith('leading_author_key'))]
-    
-    if not la_vars:
-        # Alternative: look for variables containing leading_author_key
-        la_vars = [var for var in posterior.data_vars if 'leading_author_key' in var]
-    
-    if la_vars:
-        la_var = la_vars[0]  # Take the first one found
-        print(f"Using variable: {la_var}")
-        
-        # Summary statistics
-        la_summary = az.summary(posterior, var_names=[la_var])
-        
-        # Plot distribution of random effects
-        plt.figure(figsize=(12, 6))
-        
-        # Left panel: Distribution of random effects
-        plt.subplot(1, 2, 1)
-        la_means = la_summary['mean'].values
-        plt.hist(la_means, bins=30, alpha=0.7, color='lightgreen', edgecolor='black')
-        plt.axvline(0, color='red', linestyle='--', linewidth=2, label='Zero effect')
-        plt.axvline(la_means.mean(), color='green', linestyle='-', linewidth=2, label=f'Mean: {la_means.mean():.3f}')
-        plt.xlabel('Random Effect (log odds)')
-        plt.ylabel('Count')
-        plt.title('Distribution of Leading Author Random Effects')
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-        
-        # Right panel: Caterpillar plot (top/bottom effects)
-        plt.subplot(1, 2, 2)
-        la_summary_sorted = la_summary.sort_values('mean')
-        
-        # Show top and bottom 15 effects
-        n_show = min(15, len(la_summary_sorted))
-        top_effects = la_summary_sorted.tail(n_show)
-        bottom_effects = la_summary_sorted.head(n_show)
-        combined_effects = pd.concat([bottom_effects, top_effects])
-        
-        y_pos = range(len(combined_effects))
-        plt.errorbar(combined_effects['mean'], y_pos,
-                    xerr=[combined_effects['mean'] - combined_effects['hdi_3%'],
-                          combined_effects['hdi_97%'] - combined_effects['mean']],
-                    fmt='o', capsize=3, color='green', alpha=0.7)
-        plt.axvline(0, color='red', linestyle='--', alpha=0.7)
-        
-        # Clean up labels
-        labels = []
-        for idx in combined_effects.index:
-            if '[' in idx and ']' in idx:
-                label = idx.split('[')[1].split(']')[0]
-            else:
-                label = idx
-            labels.append(label[:20])  # Truncate long names
-        
-        plt.yticks(y_pos, labels)
-        plt.xlabel('Random Effect (log odds)')
-        plt.title(f'Top/Bottom {n_show} Leading Author Effects')
-        plt.grid(True, alpha=0.3)
-        
-        plt.tight_layout()
-        plt.show()
-        
-        print(f"Leading author random effects summary:")
-        print(f"  Number of authors: {len(la_means)}")
-        print(f"  Mean effect: {la_means.mean():.3f}")
-        print(f"  SD of effects: {la_means.std():.3f}")
-        print(f"  Range: [{la_means.min():.3f}, {la_means.max():.3f}]")
-    else:
-        print("No leading author random effects found")
-        
-except Exception as e:
-    print(f"Leading author random effects plot failed: {e}")
 
-# ── Model comparison metric (LOO) ─────────────────
-try:
-    # Need to fit model with log-likelihood computation for LOO
-    idata_with_ll = model.fit(draws=2000, tune=1000, chains=4, cores=4, 
-                              target_accept=0.9, random_seed=123, 
-                              idata_kwargs={"log_likelihood": True})
-    loo = az.loo(idata_with_ll, pointwise=True)
-    print(loo)
-except Exception as e:
-    print(f"LOO calculation failed: {e}")
-    print("Model fitting completed without LOO calculation")
+fa_vars = {"First":'1|first_author_key', "Leading":'1|leading_author_key'}
+
+for var_type, fa_var in fa_vars.items():
+    print(f"\n--- {var_type} Author Random Effects ---")
+    # Summary statistics for all var_type author effects
+    fa_summary = az.summary(posterior, var_names=[fa_var])
+            
+    # Plot distribution of random effects
+    plt.figure(figsize=(12, 6))
+
+    # Left panel: Distribution of random effects
+    plt.subplot(1, 2, 1)
+    fa_means = fa_summary['mean'].values
+    plt.hist(fa_means, bins=30, alpha=0.7, color='skyblue', edgecolor='black')
+    plt.axvline(0, color='red', linestyle='--', linewidth=2, label='Zero effect')
+    plt.axvline(fa_means.mean(), color='blue', linestyle='-', linewidth=2, label=f'Mean: {fa_means.mean():.3f}')
+    plt.xlabel('Random Effect (log odds)')
+    plt.ylabel('Count')
+    plt.title('Distribution of {var_type} Author Random Effects')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+            
+    # Right panel: Caterpillar plot (top/bottom effects)
+    plt.subplot(1, 2, 2)
+    fa_summary_sorted = fa_summary.sort_values('mean')
+
+    # Show top and bottom 15 effects
+    n_show = min(15, len(fa_summary_sorted))
+    top_effects = fa_summary_sorted.tail(n_show)
+    bottom_effects = fa_summary_sorted.head(n_show)
+    combined_effects = pd.concat([bottom_effects, top_effects])
+
+    y_pos = range(len(combined_effects))
+    plt.errorbar(combined_effects['mean'], y_pos,
+                xerr=[combined_effects['mean'] - combined_effects['hdi_3%'],
+                        combined_effects['hdi_97%'] - combined_effects['mean']],
+                fmt='o', capsize=3, color='blue', alpha=0.7)
+    plt.axvline(0, color='red', linestyle='--', alpha=0.7)
+
+    # Clean up labels
+    labels = []
+    for idx in combined_effects.index:
+        if '[' in idx and ']' in idx:
+            label = idx.split('[')[1].split(']')[0]
+        else:
+            label = idx
+        labels.append(label[:20])  # Truncate long names
+
+    plt.yticks(y_pos, labels)
+    plt.xlabel('Random Effect (log odds)')
+    plt.title(f'Top/Bottom {n_show} {var_type} Author Effects')
+    plt.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.show()
+
+    print(f"{var_type} author random effects summary:")
+    print(f"  Number of authors: {len(fa_means)}")
+    print(f"  Mean effect: {fa_means.mean():.3f}")
+    print(f"  SD of effects: {fa_means.std():.3f}")
+    print(f"  Range: [{fa_means.min():.3f}, {fa_means.max():.3f}]")
+    
+
 
 
 
