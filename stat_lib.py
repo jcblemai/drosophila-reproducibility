@@ -75,11 +75,11 @@ def report_proportion(successes, total, confidence=0.95, end_sentence="of tested
     prop = successes / total
     ci_low, ci_upp = proportion_confint(count=successes, nobs=total, alpha=1-confidence, method='wilson')
     
-    prop_percent = round(100 * prop)
-    ci_low_percent = round(100 * ci_low)
-    ci_upp_percent = round(100 * ci_upp)
+    prop_percent = 100 * prop
+    ci_low_percent = 100 * ci_low
+    ci_upp_percent = 100 * ci_upp
     
-    return f"{prop_percent}% (95% CI: {ci_low_percent}%–{ci_upp_percent}%) {end_sentence}"
+    return f"{prop_percent:.1f}% (95% CI: {ci_low_percent:.1f}%–{ci_upp_percent:.1f}%) {end_sentence}"
 
 
 def report_categorical_comparison(var_grouped, labels, outcome='Challenged', alpha=0.05, what_str=""):
