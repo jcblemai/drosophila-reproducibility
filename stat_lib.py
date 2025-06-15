@@ -17,47 +17,20 @@ def analyze_covariates(df):
     """
     print(f"Dataset has {len(df)} rows\n")
     
-    # Define covariate categories
-    categories = {
-        "ID": ["id"],
-        "First author covariates": [
-            "first_author_key", "First Author Sex", "PhD Post-doc"
-        ],
-        "Leading author covariates": [
-            "leading_author_key", "Historical lab after 1998", "Continuity", 
-            "Leading Author Sex", "Junior Senior", "F and L", "first_paper_year","first_paper_before_1995"
-        ],
-        "Paper covariates": [
-            "year", "year_binned", "journal_category", "ranking_category"
-        ],
-        "Outcome": [
-            "assessment_type_grouped"
-        ]
-    }
-    
-    for category, columns in categories.items():
-        print(f"# {category}")
         
-        for col in columns:
-            if col in df.columns:
-                # Calculate missing values
-                missing_count = df[col].isna().sum()
-                total_count = len(df)
-                
-                # Calculate unique values
-                unique_values = df[col].dropna().unique()
-                n_unique = len(unique_values)
-                
-                # Print column info
-                if n_unique <= 5:
-                    # Show actual values if 5 or fewer
-                    values_str = ", ".join([str(v) for v in sorted(unique_values)])
-                    print(f"  - {col}: {values_str} ({missing_count} missing, {n_unique} unique)")
-                else:
-                    # Show count if more than 5
-                    print(f"  - {col}: {n_unique} unique values ({missing_count} missing)")
-        
-        print()  # Empty line between categories
+    for col in df.columns:
+        missing_count = df[col].isna().sum()
+        # Calculate unique values
+        unique_values = df[col].dropna().unique()
+        n_unique = len(unique_values)
+        # Print column info
+        if n_unique <= 5:
+            # Show actual values if 5 or fewer
+            values_str = ", ".join([str(v) for v in sorted(unique_values)])
+            print(f"  - {col:<30}: ({missing_count:<3} missing, {n_unique:<3} unique) {values_str} ")
+        else:
+            # Show count if more than 5
+            print(f"  - {col:<30}: ({missing_count:<3} missing, {n_unique:<3} unique)")
 
 
 def report_proportion(successes, total, confidence=0.95, end_sentence="of tested claims were irreproducible."):
@@ -225,3 +198,175 @@ def create_forest_plot(data, title, color='navy'):
     plt.title(f"Odds Ratios: {title}")
     plt.tight_layout()
     plt.show()
+
+
+def run_BinomialBayesMixedGLM_deprecated():
+    """
+    The model that did not work, see my note
+    """
+    ## The mixed model will use the following covariates:
+    # ---------------------------------------------------------
+    #  Step 0  – define the columns actually used in the model
+    # ---------------------------------------------------------
+    fixed_effect_vars = [
+        'journal_category', 'year_binned', 'First Author Sex', 'Leading Author Sex',
+        'PhD Post-doc', 'Junior Senior', 'Continuity', 'first_paper_before_1995', #'F and L', 
+        'ranking_category'
+    ]
+    random_effect_vars = ['first_author_key', 'leading_author_key']
+    target = ['challenged_flag']
+
+    model_vars = fixed_effect_vars + random_effect_vars + target
+
+    # ---------------------------------------------------------
+    #  Step 1  – drop incomplete rows
+    # ---------------------------------------------------------
+    all_covar_cc = (
+        all_covar
+        .dropna(subset=model_vars)         # complete-case
+        .reset_index(drop=True)
+    )
+
+    print(f"Dropped {len(all_covar) - len(all_covar_cc)} incomplete rows "
+        f"({100*(len(all_covar) - len(all_covar_cc))/len(all_covar):.1f} %).")
+
+    # ---------------------------------------------------------
+    #  Step 2  – re-encode categoricals
+    # ---------------------------------------------------------
+    for c in fixed_effect_vars:
+        all_covar_cc[c] = all_covar_cc[c].astype('category')
+    for c in random_effect_vars:
+        all_covar_cc[c] = all_covar_cc[c].astype('category')
+
+    # replace spaces in column names with underscores
+    all_covar_cc.columns = all_covar_cc.columns.str.replace(' ', '_', regex=False)
+    all_covar_cc.columns = all_covar_cc.columns.str.replace('-', '', regex=False)
+    # ------------------------------------------------------------------
+    # 2) APPROXIMATE FREQUENTIST GLMM  (statsmodels)
+    # ------------------------------------------------------------------
+    import statsmodels.api as sm
+    # bs(year, df=3) # is a B-spline basis expansion of the year variable
+    # could also have used the year as a scale
+    fixef_formula = (
+        "challenged_flag ~ "
+        # paper covariates
+        "C(journal_category, Treatment('Low Impact')) + "
+        "bs(year, df=4) + "
+        "C(ranking_category, Treatment('Not Ranked')) + "
+        # first author covariates
+        "C(First_Author_Sex, Treatment('Male')) + "
+        "C(PhD_Postdoc, Treatment('PhD')) + "
+        # leading author covariates
+        "C(Leading_Author_Sex, Treatment('Male')) + "
+        "C(Junior_Senior, Treatment('Junior PI')) + "
+        "C(Continuity, Treatment(False)) + "
+        # "C(F_and_L, Treatment(False)) + "
+        "C(first_paper_before_1995, Treatment(False))"
+    )
+    vc_formulas = {
+        'first_author': '0 + C(first_author_key)',
+        'leading_author': '0 + C(leading_author_key)'
+    }
+    #vc_formulas = {} # no random effects, just fixed effects
+    glmm = sm.BinomialBayesMixedGLM.from_formula(
+        fixef_formula, vc_formulas, data=all_covar_cc
+    )
+    # result = glmm.fit_vb() # mean-field variational Bayes approximation is fit_vb, faster but worst.
+    # result = glmm.fit_map()
+    result = glmm.fit_map(method='BFGS') 
+
+    print(result.summary())
+
+
+    # ────────────────────────────────────────────────────────────────────────────────
+    # 1.  FIT INFO & SAFE FALL-BACKS
+    # ────────────────────────────────────────────────────────────────────────────────
+    def safe_pseudo_r2(full_prob, y):
+        """McFadden R² using predicted probs; works even when llf/llnull absent."""
+        ll_full = np.sum(y * np.log(full_prob) + (1 - y) * np.log1p(-full_prob))
+        p0 = y.mean()
+        ll_null = np.sum(y * np.log(p0) + (1 - y) * np.log1p(-p0))
+        return 1 - ll_full / ll_null
+
+    # predicted probabilities
+    p_hat = result.predict()
+    mcFadden_R2 = safe_pseudo_r2(p_hat, all_covar_cc.challenged_flag)
+    print(f"McFadden pseudo-R² (manual) = {mcFadden_R2:.3f}")
+
+    # ELBO history is only stored for VB and only in recent versions
+    if hasattr(result, "elbo_history") and result.elbo_history is not None:
+        plt.plot(result.elbo_history)
+        plt.title("Variational Bayes – ELBO by iteration")
+        plt.xlabel("Iteration"); plt.ylabel("ELBO"); plt.tight_layout(); plt.show()
+    else:
+        print("ELBO history not available for this fit (expected for MAP).")
+
+    # ────────────────────────────────────────────────────────────────────────────────
+    # 2.  MULTICOLLINEARITY CHECK ON FIXED EFFECTS
+    # ────────────────────────────────────────────────────────────────────────────────
+    X_fixed = result.model.exog          # design matrix after Patsy
+    vif_series = pd.Series(
+        [variance_inflation_factor(X_fixed, i) for i in range(X_fixed.shape[1])],
+        index=result.model.exog_names, name="VIF"
+    )
+    print("\nPredictors with VIF > 5 (rule-of-thumb flag for collinearity):")
+    print(vif_series[vif_series > 5])    # thresholds 5–10 are common flags:contentReference[oaicite:2]{index=2}:contentReference[oaicite:3]{index=3}
+
+
+    # ---------------------------------------------------------------
+    #  2.  Tidy table of odds ratios + 95 % intervals
+    # ---------------------------------------------------------------
+    fe_mean = result.fe_mean                # posterior mean of fixed effects
+    fe_sd   = result.fe_sd                  # posterior SD (VB ≈ σ)
+    z975    = norm.ppf(0.975)
+    or_df = (pd.DataFrame({
+            'Predictor'  : result.model.exog_names,
+            'logOR'      : fe_mean,
+            'SE'         : fe_sd,
+            'OR'         : np.exp(fe_mean),
+            'CI_low'     : np.exp(fe_mean - z975*fe_sd),
+            'CI_high'    : np.exp(fe_mean + z975*fe_sd)
+        })
+        .assign(Significant = lambda d: (d.CI_low>1) | (d.CI_high<1))
+        .sort_values('OR', ascending=False)
+    )
+    print(or_df)
+
+    # Random-effect ICC: This quantifies how much irreproducibility clusters by person vs lab.
+    try:
+        var_author = result.vc_mean[0]  # first random effect
+        var_lab    = result.vc_mean[1]  # second random effect
+        icc_author = var_author / (var_author + var_lab + np.pi**2/3)
+        icc_lab    = var_lab    / (var_author + var_lab + np.pi**2/3)
+        print(f"ICC first-author = {icc_author:.2%}, lab = {icc_lab:.2%}")
+    except (IndexError, TypeError):
+        print("Cannot calculate ICC - variance components not accessible")
+
+
+    # ---------------------------------------------------------------
+    #  3.  Forest plot
+    # ---------------------------------------------------------------
+    plt.figure(figsize=(6, len(or_df)*0.45))
+    y = np.arange(len(or_df))
+    plt.errorbar(or_df['OR'], y, xerr=[or_df['OR']-or_df['CI_low'], 
+                                    or_df['CI_high']-or_df['OR']],
+                fmt='o', color='navy', ecolor='lightgray', capsize=3)
+    plt.yticks(y, or_df['Predictor'])
+    plt.axvline(1, ls='--', color='red')
+    plt.xlabel("Odds Ratio (log scale)"); plt.xscale('log')
+    plt.title("Adjusted odds ratios for irreproducible claims")
+    plt.tight_layout()
+    plt.savefig("figures/forest_plot_OR.png", dpi=300)
+    plt.show()
+
+    # ────────────────────────────────────────────────────────────────────────────────
+    # 5.  POSTERIOR PREDICTIVE CHECK (MEAN OUTCOME)
+    # ────────────────────────────────────────────────────────────────────────────────
+    n_sims = 400
+    sim_means = np.random.binomial(1, p_hat.reshape(1, -1).repeat(n_sims, axis=0)).mean(axis=1)
+    sns.histplot(sim_means, bins=30, color='skyblue'); 
+    plt.axvline(all_covar_cc.challenged_flag.mean(), color='black', lw=2, label='Observed');
+    plt.legend(); plt.title("Posterior predictive check (mean challenged rate)");
+    plt.xlabel("Simulated mean"); plt.tight_layout(); plt.show()
+
+()
