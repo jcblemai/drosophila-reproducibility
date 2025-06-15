@@ -182,22 +182,375 @@ def forest_plot(glm_res, title="Adjusted odds ratios", ax=None,
     plt.tight_layout()
     return ax
 
-# Create separate forest plots
-def create_forest_plot(data, title, color='navy'):
+# Create publication-friendly forest plots
+def create_forest_plot(data, title, color='navy', category_labels=None, reference_labels=None):
+    """
+    Create publication-friendly forest plots.
+    
+    Parameters:
+    -----------
+    data : DataFrame with columns OR, OR_low, OR_high
+    title : str, plot title
+    color : str, color for points and lines
+    category_labels : dict, mapping from variable names to clean category labels
+    reference_labels : dict, mapping from variable names to reference category names
+    """
     if len(data) == 0:
         return
-    plt.figure(figsize=(8, max(3, len(data)*0.5)))
-    y = np.arange(len(data))
-    plt.errorbar(data['OR'], y,
-                 xerr=[data['OR']-data['OR_low'], data['OR_high']-data['OR']],
-                 fmt='o', color=color, ecolor='lightgray', capsize=3)
-    plt.yticks(y, data.index)
-    plt.axvline(1, ls='--', color='red', alpha=0.7)
-    plt.xlabel("Odds Ratio (log scale)")
-    plt.xscale('log')
-    plt.title(f"Odds Ratios: {title}")
+    
+    # Clean up variable names for publication using shared function
+    clean_labels = [clean_variable_name(idx, for_plot=True) for idx in data.index]
+    
+    # Handle category-based grouping if category column exists
+    has_categories = 'category' in data.columns
+    if has_categories:
+        # Sort by category for better organization
+        data_sorted = data.copy()
+        category_order = ['First Author', 'Leading Author', 'Paper/Journal', 'Lowest Effects', 'Highest Effects']
+        data_sorted['category_num'] = data_sorted['category'].map(
+            {cat: i for i, cat in enumerate(category_order)}
+        ).fillna(999)
+        data_sorted = data_sorted.sort_values(['category_num', 'OR'], ascending=[True, False])
+        
+        # Update clean_labels for sorted data and create spaced layout
+        clean_labels_spaced = []
+        y_positions_spaced = []
+        colors_spaced = []
+        data_rows = []
+        
+        current_category = None
+        y_pos = 0
+        
+        # Define colors for each category
+        category_colors = {
+            'First Author': 'blue',
+            'Leading Author': 'green', 
+            'Paper/Journal': 'orange',
+            'Lowest Effects': 'red',
+            'Highest Effects': 'darkgreen'
+        }
+        
+        for idx, row in data_sorted.iterrows():
+            if row['category'] != current_category:
+                if current_category is not None:
+                    # Add spacing for category separation
+                    y_pos += 1
+                
+                # Add category header
+                clean_labels_spaced.append(f"{row['category']} Effects")
+                y_positions_spaced.append(y_pos)
+                colors_spaced.append('black')  # Category headers in black
+                data_rows.append(None)  # No data for category headers
+                y_pos += 1
+                
+                current_category = row['category']
+            
+            # Add the actual data point
+            clean_label = clean_variable_name(idx, for_plot=True)
+            clean_labels_spaced.append(clean_label)
+            y_positions_spaced.append(y_pos)
+            colors_spaced.append(category_colors.get(row['category'], color))
+            data_rows.append(row)
+            y_pos += 1
+        
+        clean_labels = clean_labels_spaced
+        y_positions = y_positions_spaced
+        colors = colors_spaced
+        data_for_plot = data_rows
+    else:
+        colors = [color] * len(data)
+        y_positions = np.arange(len(data))
+        data_for_plot = [row for idx, row in data.iterrows()]
+    
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(12, max(6, len(clean_labels)*0.4)))
+    
+    # Determine plot limits to handle extreme values
+    all_ors = []
+    all_or_lows = []
+    all_or_highs = []
+    for data_row in data_for_plot:
+        if data_row is not None:
+            all_ors.append(data_row['OR'])
+            all_or_lows.append(data_row['OR_low'])
+            all_or_highs.append(data_row['OR_high'])
+    
+    # Set reasonable plot limits
+    min_or = min(all_or_lows) if all_or_lows else 0.1
+    max_or = max(all_or_highs) if all_or_highs else 10
+    
+    # Define extreme value thresholds
+    lower_threshold = 0.001
+    upper_threshold = 10
+    
+    # Set plot limits with some padding
+    plot_min = max(min_or * 0.8, lower_threshold * 0.1)
+    plot_max = min(max_or * 1.2, upper_threshold * 10)
+    
+    # Plot error bars and points 
+    for i, (y_pos, data_row, point_color) in enumerate(zip(y_positions, data_for_plot, colors)):
+        if data_row is not None:  # Skip category headers
+            or_val = data_row['OR']
+            or_low = data_row['OR_low']
+            or_high = data_row['OR_high']
+            
+            # Check for extreme values
+            has_extreme_low = or_low < lower_threshold
+            has_extreme_high = or_high > upper_threshold
+            
+            # Adjust values for plotting if extreme
+            plot_or_low = max(or_low, plot_min)
+            plot_or_high = min(or_high, plot_max)
+            plot_or = or_val
+            
+            # Plot the main error bar
+            ax.errorbar(plot_or, y_pos,
+                        xerr=[[plot_or-plot_or_low], [plot_or_high-plot_or]],
+                        fmt='o', color=point_color, ecolor='lightgray', capsize=4, 
+                        markersize=6, linewidth=2)
+            
+            # Add arrows for extreme values
+            if has_extreme_low:
+                # Left arrow for extremely small values
+                ax.annotate('', xy=(plot_min, y_pos), xytext=(plot_min * 1.5, y_pos),
+                           arrowprops=dict(arrowstyle='<-', color=point_color, lw=2))
+                
+            if has_extreme_high:
+                # Right arrow for extremely large values  
+                ax.annotate('', xy=(plot_max, y_pos), xytext=(plot_max * 0.7, y_pos),
+                           arrowprops=dict(arrowstyle='->', color=point_color, lw=2))
+    
+    # Reference line at OR = 1
+    ax.axvline(1, ls='--', color='red', alpha=0.7, linewidth=1)
+    
+    # Formatting - publication ready
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(clean_labels, fontsize=10)
+    
+    # Make category headers bold
+    for i, label in enumerate(clean_labels):
+        if 'Effects' in label and data_for_plot[i] is None:
+            ax.get_yticklabels()[i].set_fontweight('bold')
+            ax.get_yticklabels()[i].set_fontsize(11)
+    
+    ax.set_xlabel("Odds Ratio", fontsize=12, fontweight='bold')
+    ax.set_xscale('log')
+    ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
+    
+    # Set x-axis limits to handle extreme values
+    ax.set_xlim(plot_min, plot_max)
+    
+    # Remove spines and ticks for publication quality
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.tick_params(left=False)  # Remove left ticks
+    
+    # Create legend for categories if needed
+    if has_categories and len(set(data['category'])) > 1:
+        legend_elements = []
+        unique_categories = data['category'].unique()
+        for cat in ['First Author', 'Leading Author', 'Paper/Journal', 'Lowest Effects', 'Highest Effects']:
+            if cat in unique_categories:
+                col = category_colors[cat]
+                legend_elements.append(plt.Line2D([0], [0], marker='o', color='w', 
+                                                markerfacecolor=col, markersize=8, label=cat))
+        if legend_elements:
+            ax.legend(handles=legend_elements, loc='lower right', frameon=True, fancybox=True)
+    
+    # Add OR values as text annotations
+    for i, (y_pos, data_row) in enumerate(zip(y_positions, data_for_plot)):
+        if data_row is not None:  # Only annotate actual data points, not category headers
+            or_val = data_row['OR']
+            or_low = data_row['OR_low']
+            or_high = data_row['OR_high']
+            
+            # Format the annotation text with extreme value indicators
+            or_low_text = f"<{lower_threshold:.3f}" if or_low < lower_threshold else f"{or_low:.2f}"
+            or_high_text = f">{upper_threshold:.0f}" if or_high > upper_threshold else f"{or_high:.2f}"
+            
+            # Position annotation text appropriately
+            text_x = min(or_val * 1.1, plot_max * 0.95)
+            
+            ax.text(text_x, y_pos, f'{or_val:.2f}\n[{or_low_text}, {or_high_text}]', 
+                    ha='left', va='center', fontsize=8, alpha=0.8)
+    
+    # Grid for easier reading
+    ax.grid(True, alpha=0.3, axis='x')
+    ax.set_axisbelow(True)
+    
+    # Add note about extreme values if any are present
+    has_any_extreme = any(
+        (data_row is not None and (data_row['OR_low'] < lower_threshold or data_row['OR_high'] > upper_threshold))
+        for data_row in data_for_plot
+    )
+    
+    if has_any_extreme:
+        note_text = f"Note: Arrows indicate confidence intervals extending beyond {lower_threshold:.3f} or {upper_threshold:.0f}"
+        ax.text(0.5, -0.1, note_text, transform=ax.transAxes, 
+                ha='center', va='top', fontsize=9, style='italic', alpha=0.7)
+    
+    # Adjust layout for publication quality
     plt.tight_layout()
-    plt.show()
+    plt.subplots_adjust(left=0.35, right=0.85, top=0.9, bottom=0.15)  # More bottom space for note
+    return fig, ax  # Return figure and axis for notebook display
+
+# Convenience function for random effects forest plots
+def create_random_effects_forest_plot(random_effects_summary, title, color='navy', n_show=15):
+    """
+    Create forest plot for random effects (top and bottom effects).
+    Uses the main create_forest_plot function under the hood.
+    
+    Parameters:
+    -----------
+    random_effects_summary : DataFrame with mean, hdi_3%, hdi_97% columns
+    title : str
+    color : str
+    n_show : int, number of top/bottom effects to show
+    """
+    if len(random_effects_summary) == 0:
+        return
+    
+    # Sort by effect size and select top/bottom effects
+    sorted_effects = random_effects_summary.sort_values('mean')
+    n_show = min(n_show, len(sorted_effects))
+    
+    top_effects = sorted_effects.tail(n_show)
+    bottom_effects = sorted_effects.head(n_show)
+    combined_effects = pd.concat([bottom_effects, top_effects])
+    
+    # Calculate OR and CI
+    combined_effects = combined_effects.copy()
+    combined_effects['OR'] = np.exp(combined_effects['mean'])
+    combined_effects['OR_low'] = np.exp(combined_effects['hdi_3%'])
+    combined_effects['OR_high'] = np.exp(combined_effects['hdi_97%'])
+    
+    # Add category information for grouping
+    combined_effects['category'] = ['Lowest Effects'] * len(bottom_effects) + ['Highest Effects'] * len(top_effects)
+    
+    # Use the main forest plot function
+    return create_forest_plot(combined_effects, f'{title}\n(Top/Bottom {n_show} Effects)', color)
+
+# Shared function to clean variable names for both plots and tables
+def clean_variable_name(var_name, for_plot=False):
+    """
+    Clean a single variable name for publication-ready display.
+    
+    Parameters:
+    -----------
+    var_name : str, original variable name
+    for_plot : bool, if True, return format suitable for plots; if False, for tables
+    
+    Returns:
+    --------
+    str, cleaned variable name
+    """
+    clean_name = var_name
+    
+    # Handle categorical variables with Treatment specification
+    if 'C(' in clean_name and 'Treatment(' in clean_name:
+        # Extract variable name and category
+        parts = clean_name.split("', Treatment('")
+        if len(parts) == 2:
+            var_part = parts[0].replace("C(", "").replace("'", "")
+            ref_part = parts[1].replace("'))", "").replace("[", ": ").replace("]", "")
+            
+            # Clean variable names
+            if var_part == 'PhD_Postdoc':
+                var_display = 'PhD/Postdoc'
+            elif var_part == 'journal_category':
+                var_display = 'Journal Category'
+            elif var_part == 'ranking_category':
+                var_display = 'University Ranking'
+            elif var_part == 'First_Author_Sex':
+                var_display = 'First Author Sex'
+            elif var_part == 'Leading_Author_Sex':
+                var_display = 'Leading Author Sex'
+            elif var_part == 'Junior_Senior':
+                var_display = 'Seniority'
+            elif var_part == 'highest_impact_journal':
+                var_display = 'Highest Impact Journal'
+            elif var_part == 'highest_ranking_institution':
+                var_display = 'Highest Ranking Institution'
+            else:
+                var_display = var_part.replace('_', ' ').title()
+            
+            # Get reference category name - clean it up
+            ref_clean = ref_part.replace("'", "")
+            
+            if for_plot:
+                clean_name = f"{var_display}: {ref_part} (vs {ref_clean})"
+            else:
+                clean_name = f"{var_display}: {ref_part}"
+    
+    # Handle continuous variables
+    elif 'log_num_papers' in clean_name:
+        clean_name = 'Log(Number of Papers)'
+    elif 'year_s' in clean_name:
+        clean_name = clean_name.replace('year_s', 'Year Spline ')
+    elif 'Intercept' in clean_name:
+        clean_name = 'Intercept'
+    
+    # Handle random effects with author IDs
+    elif '[' in clean_name and ']' in clean_name:
+        author_id = clean_name.split('[')[1].split(']')[0]
+        clean_name = f'Author {author_id[:20]}'  # Truncate long IDs
+    
+    return clean_name
+
+# Function to clean variable names for tables
+def clean_variable_names_for_table(df):
+    """
+    Clean variable names in DataFrame index for publication-ready tables.
+    
+    Parameters:
+    -----------
+    df : DataFrame with variable names as index
+    
+    Returns:
+    --------
+    DataFrame with cleaned index names
+    """
+    df_clean = df.copy()
+    clean_names = [clean_variable_name(idx, for_plot=False) for idx in df.index]
+    df_clean.index = clean_names
+    return df_clean
+
+# Function to format DataFrame for publication (no scientific notation, 2 decimal places)
+def format_results_table(df, or_columns=['OR', 'OR_low', 'OR_high'], other_columns=None):
+    """
+    Format results table for publication with proper decimal formatting.
+    
+    Parameters:
+    -----------
+    df : DataFrame with results
+    or_columns : list of OR-related columns to format to 2 decimal places
+    other_columns : list of other columns to format
+    
+    Returns:
+    --------
+    DataFrame with formatted values
+    """
+    df_formatted = df.copy()
+    
+    # Format OR columns to 2 decimal places
+    for col in or_columns:
+        if col in df_formatted.columns:
+            df_formatted[col] = df_formatted[col].apply(lambda x: f"{x:.2f}")
+    
+    # Format other numeric columns if specified
+    if other_columns:
+        for col in other_columns:
+            if col in df_formatted.columns:
+                if 'p' in col.lower() or 'pval' in col.lower():
+                    # Special formatting for p-values
+                    df_formatted[col] = df_formatted[col].apply(
+                        lambda x: f"{x:.3f}" if x >= 0.001 else f"{x:.2e}"
+                    )
+                else:
+                    df_formatted[col] = df_formatted[col].apply(lambda x: f"{x:.2f}")
+    
+    return df_formatted
 
 
 def run_BinomialBayesMixedGLM_deprecated():

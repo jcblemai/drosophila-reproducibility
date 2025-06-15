@@ -22,6 +22,12 @@ from scipy.stats import norm
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 import matplotlib.pyplot as plt
 import seaborn as sns
+# Configure matplotlib for better notebook display
+plt.rcParams['figure.dpi'] = 100
+plt.rcParams['savefig.dpi'] = 300
+plt.ion()  # Turn on interactive mode for better notebook display
+import matplotlib
+matplotlib.use('inline')  # Use inline backend for Jupyter
 import stat_lib
 import pytensor, os
 pytensor.config.cxx = "/usr/bin/clang++"
@@ -177,19 +183,33 @@ leading_author_effects = coef[coef.index.str.contains('Leading_Author_Sex|Junior
 paper_effects = coef[coef.index.str.contains('journal_category|ranking_category|year_s')]
 intercept_effect = coef[coef.index.str.contains('Intercept')]
 
-# Display tables
+# Display tables with clean names and formatting
 print("\n--- First Author Effects ---")
-print(first_author_effects[['OR', 'OR_low', 'OR_high']].round(3))
+first_author_clean = stat_lib.clean_variable_names_for_table(first_author_effects)
+first_author_formatted = stat_lib.format_results_table(first_author_clean)
+print(first_author_formatted[['OR', 'OR_low', 'OR_high']])
 
 print("\n--- Leading Author Effects ---")
-print(leading_author_effects[['OR', 'OR_low', 'OR_high']].round(3))
+leading_author_clean = stat_lib.clean_variable_names_for_table(leading_author_effects)
+leading_author_formatted = stat_lib.format_results_table(leading_author_clean)
+print(leading_author_formatted[['OR', 'OR_low', 'OR_high']])
 
 print("\n--- Paper/Journal Effects ---")
-print(paper_effects[['OR', 'OR_low', 'OR_high']].round(3))
+paper_effects_clean = stat_lib.clean_variable_names_for_table(paper_effects)
+paper_effects_formatted = stat_lib.format_results_table(paper_effects_clean)
+print(paper_effects_formatted[['OR', 'OR_low', 'OR_high']])
 
-stat_lib.create_forest_plot(first_author_effects, "First Author Effects", 'blue')
-stat_lib.create_forest_plot(leading_author_effects, "Leading Author Effects", 'green') 
-stat_lib.create_forest_plot(paper_effects, "Paper/Journal Effects", 'orange')
+# Create single comprehensive forest plot with all effects
+all_effects = pd.concat([
+    first_author_effects.assign(category='First Author'),
+    leading_author_effects.assign(category='Leading Author'), 
+    paper_effects.assign(category='Paper/Journal')
+])
+
+# Create the combined forest plot
+fig, ax = stat_lib.create_forest_plot(all_effects, "All Model Effects: Predictors of Challenged Claims", 'navy')
+from IPython.display import display
+display(fig)  # Explicitly display the figure in notebook
 
 
 # %%
@@ -207,61 +227,17 @@ for var_type, fa_var in fa_vars.items():
     print(f"\n--- {var_type} Author Random Effects ---")
     # Summary statistics for all var_type author effects
     fa_summary = az.summary(posterior, var_names=[fa_var])
-            
-    # Plot distribution of random effects
-    plt.figure(figsize=(12, 6))
-
-    # Left panel: Distribution of random effects
-    plt.subplot(1, 2, 1)
     fa_means = fa_summary['mean'].values
-    plt.hist(fa_means, bins=30, alpha=0.7, color='skyblue', edgecolor='black')
-    plt.axvline(0, color='red', linestyle='--', linewidth=2, label='Zero effect')
-    plt.axvline(fa_means.mean(), color='blue', linestyle='-', linewidth=2, label=f'Mean: {fa_means.mean():.3f}')
-    plt.xlabel('Random Effect (log odds)')
-    plt.ylabel('Count')
-    plt.title('Distribution of {var_type} Author Random Effects')
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-            
-    # Right panel: Caterpillar plot (top/bottom effects)
-    plt.subplot(1, 2, 2)
-    fa_summary_sorted = fa_summary.sort_values('mean')
-
-    # Show top and bottom 15 effects
-    n_show = min(15, len(fa_summary_sorted))
-    top_effects = fa_summary_sorted.tail(n_show)
-    bottom_effects = fa_summary_sorted.head(n_show)
-    combined_effects = pd.concat([bottom_effects, top_effects])
-
-    y_pos = range(len(combined_effects))
-    plt.errorbar(combined_effects['mean'], y_pos,
-                xerr=[combined_effects['mean'] - combined_effects['hdi_3%'],
-                        combined_effects['hdi_97%'] - combined_effects['mean']],
-                fmt='o', capsize=3, color='blue', alpha=0.7)
-    plt.axvline(0, color='red', linestyle='--', alpha=0.7)
-
-    # Clean up labels
-    labels = []
-    for idx in combined_effects.index:
-        if '[' in idx and ']' in idx:
-            label = idx.split('[')[1].split(']')[0]
-        else:
-            label = idx
-        labels.append(label[:20])  # Truncate long names
-
-    plt.yticks(y_pos, labels)
-    plt.xlabel('Random Effect (log odds)')
-    plt.title(f'Top/Bottom {n_show} {var_type} Author Effects')
-    plt.grid(True, alpha=0.3)
-
-    plt.tight_layout()
-    plt.show()
-
+    
     print(f"{var_type} author random effects summary:")
     print(f"  Number of authors: {len(fa_means)}")
     print(f"  Mean effect: {fa_means.mean():.3f}")
     print(f"  SD of effects: {fa_means.std():.3f}")
     print(f"  Range: [{fa_means.min():.3f}, {fa_means.max():.3f}]")
+    
+    # Create publication-friendly forest plot for random effects
+    fig, ax = stat_lib.create_random_effects_forest_plot(fa_summary, f"{var_type} Author Random Effects", 'darkgreen')
+    plt.show()  # Ensure plot displays in notebook
 
     
 
@@ -412,6 +388,7 @@ plt.title('Posterior Predictive Check - Mean PI Rate')
 plt.legend()
 plt.tight_layout()
 plt.show()
+plt.show()  # Ensure plot displays in notebook
 
 # Results analysis
 print("\n=== ODDS RATIOS FOR PI PREDICTION ===")
@@ -423,10 +400,13 @@ pi_coef['OR_low'] = np.exp(pi_coef['hdi_3%'])
 pi_coef['OR_high'] = np.exp(pi_coef['hdi_97%'])
 
 print("Odds Ratios (95% HDI):")
-print(pi_coef[['OR', 'OR_low', 'OR_high']].round(3))
+pi_coef_clean = stat_lib.clean_variable_names_for_table(pi_coef)
+pi_coef_formatted = stat_lib.format_results_table(pi_coef_clean)
+print(pi_coef_formatted[['OR', 'OR_low', 'OR_high']])
 
 # Create forest plot for PI model
-stat_lib.create_forest_plot(pi_coef, "Predictors of Becoming a PI", 'purple')
+fig, ax = stat_lib.create_forest_plot(pi_coef, "Predictors of Becoming a PI", 'purple')
+plt.show()  # Ensure plot displays in notebook
 
 print("\n=== MODEL SUMMARY ===")
 print(f"Total authors analyzed: {len(author_df_clean)}")
@@ -493,7 +473,9 @@ simple_coef['OR_low'] = np.exp(simple_coef['hdi_3%'])
 simple_coef['OR_high'] = np.exp(simple_coef['hdi_97%'])
 
 print("Odds Ratios (95% HDI) - Journal vs University Effects:")
-print(simple_coef[['OR', 'OR_low', 'OR_high']].round(3))
+simple_coef_clean = stat_lib.clean_variable_names_for_table(simple_coef)
+simple_coef_formatted = stat_lib.format_results_table(simple_coef_clean)
+print(simple_coef_formatted[['OR', 'OR_low', 'OR_high']])
 
 # Separate journal and university effects
 journal_effects = simple_coef[simple_coef.index.str.contains('journal_category')]
@@ -501,13 +483,19 @@ university_effects = simple_coef[simple_coef.index.str.contains('ranking_categor
 
 print("\n--- Journal Category Effects ---")
 if len(journal_effects) > 0:
-    print(journal_effects[['OR', 'OR_low', 'OR_high']].round(3))
-    stat_lib.create_forest_plot(journal_effects, "Journal Category Effects", 'red')
+    journal_effects_clean = stat_lib.clean_variable_names_for_table(journal_effects)
+    journal_effects_formatted = stat_lib.format_results_table(journal_effects_clean)
+    print(journal_effects_formatted[['OR', 'OR_low', 'OR_high']])
+    fig, ax = stat_lib.create_forest_plot(journal_effects, "Journal Category Effects", 'red')
+    plt.show()  # Ensure plot displays in notebook
 
 print("\n--- University Ranking Effects ---")
 if len(university_effects) > 0:
-    print(university_effects[['OR', 'OR_low', 'OR_high']].round(3))
-    stat_lib.create_forest_plot(university_effects, "University Ranking Effects", 'blue')
+    university_effects_clean = stat_lib.clean_variable_names_for_table(university_effects)
+    university_effects_formatted = stat_lib.format_results_table(university_effects_clean)
+    print(university_effects_formatted[['OR', 'OR_low', 'OR_high']])
+    fig, ax = stat_lib.create_forest_plot(university_effects, "University Ranking Effects", 'blue')
+    plt.show()  # Ensure plot displays in notebook
 
 print("\n=== SIMPLIFIED MODEL SUMMARY ===")
 print(f"This model isolates the effects of journal prestige vs university ranking")
