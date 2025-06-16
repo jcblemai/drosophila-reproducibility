@@ -1,16 +1,126 @@
+# Core statistical libraries
+import numpy as np
+import pandas as pd
+import scipy.stats as stats
+from scipy.stats import norm
+
+# Statistical modeling
+import statsmodels.api as sm
 from statsmodels.stats.proportion import proportion_confint
 from statsmodels.stats.contingency_tables import Table2x2
-import scipy.stats as stats
-import pandas as pd
-import numpy as np
-import patsy
-import statsmodels.api as sm
-from statsmodels.genmod.generalized_linear_model import GLM
-from statsmodels.genmod.families import Binomial
-import bambi as bmb
-import matplotlib.pyplot as plt
+from statsmodels.stats.outliers_influence import variance_inflation_factor
 
-# Dataset covariate summary
+# Bayesian analysis
+import bambi as bmb
+import arviz as az
+
+# Plotting
+import matplotlib.pyplot as plt
+import forestplot as fp
+from plot_info import SMALL_SIZE, MEDIUM_SIZE, BIGGER_SIZE
+
+
+def parse_model_variables(variable_names, formula=None):
+    """
+    Bulletproof function to parse model variables and create clean category mappings.
+    
+    Parameters:
+    -----------
+    variable_names : list of str
+        List of model variable names (e.g., from model.summary())
+    formula : str, optional
+        Model formula string for better parsing context
+        
+    Returns:
+    --------
+    dict: {
+        'clean_names': list of clean variable names for display,
+        'categories': list of category names for each variable,
+        'category_mapping': dict mapping categories to variable lists,
+        'is_categorical': list of booleans indicating categorical variables
+    }
+    """
+    
+
+    clean_names = []
+    categories = []
+    category_mapping = {}
+    is_categorical = []
+    
+    for var_name in variable_names:
+        # Skip intercept
+        if 'Intercept' in var_name:
+            continue
+            
+        # Parse categorical variables: C(variable, Treatment(...))[level]
+        if var_name.startswith('C('):
+            # Extract base variable name
+            end_pos = var_name.find(',')
+            if end_pos > 0:
+                base_var = var_name[2:end_pos].strip()
+                
+                # Extract level from [level]
+                level_start = var_name.rfind('[')
+                level_end = var_name.rfind(']')
+                if level_start > 0 and level_end > level_start:
+                    level = var_name[level_start+1:level_end]
+                    # Remove T. prefix if present
+                    if level.startswith('T.'):
+                        level = level[2:]
+                else:
+                    level = "Unknown Level"
+                
+                # Create clean names
+                category_name = base_var.replace('_', ' ').title()
+                clean_name = level
+                
+                clean_names.append(clean_name)
+                categories.append(category_name)
+                is_categorical.append(True)
+                
+                # Add to category mapping
+                if category_name not in category_mapping:
+                    category_mapping[category_name] = []
+                category_mapping[category_name].append(var_name)
+        
+        # Parse year splines
+        elif var_name.startswith('year_s'):
+            spline_num = var_name.replace('year_s', '')
+            category_name = 'Year (Splines)'
+            clean_name = f"Spline {spline_num}"
+            
+            clean_names.append(clean_name)
+            categories.append(category_name)
+            is_categorical.append(False)
+            
+            if category_name not in category_mapping:
+                category_mapping[category_name] = []
+            category_mapping[category_name].append(var_name)
+        
+        # Parse continuous variables
+        else:
+            category_name = var_name.replace('_', ' ').title()
+            clean_name = category_name
+            
+            clean_names.append(clean_name)
+            categories.append(category_name)
+            is_categorical.append(False)
+            
+            if category_name not in category_mapping:
+                category_mapping[category_name] = []
+            category_mapping[category_name].append(var_name)
+    
+    return {
+        'clean_names': clean_names,
+        'categories': categories, 
+        'category_mapping': category_mapping,
+        'is_categorical': is_categorical
+    }
+
+# ============================================================================
+# DESCRIPTIVE STATISTICS AND DATA EXPLORATION
+# ============================================================================
+
 def analyze_covariates(df):
     """
     Analyze covariates in the dataset and provide detailed summary
@@ -32,6 +142,9 @@ def analyze_covariates(df):
             # Show count if more than 5
             print(f"  - {col:<30}: ({missing_count:<3} missing, {n_unique:<3} unique)")
 
+# ============================================================================
+# STATISTICAL REPORTING FUNCTIONS
+# ============================================================================
 
 def report_proportion(successes, total, confidence=0.95, end_sentence="of tested claims were irreproducible."):
     """
@@ -121,6 +234,9 @@ def report_categorical_comparison(var_grouped, labels, outcome='Challenged', alp
     
     return sentence, summary
 
+# ============================================================================
+# MODEL UTILITIES AND DIAGNOSTICS  
+# ============================================================================
 
 def tidy_glm_or_table(glm_res, drop_intercept=True, digits=2):
     """
@@ -152,248 +268,128 @@ def tidy_glm_or_table(glm_res, drop_intercept=True, digits=2):
             .round(digits)
             .sort_values("OR", ascending=False))
 
+def check_model_convergence(short=False, idata=None):
+    if idata is None:
+        raise ValueError("No inference data provided. Please provide an ArviZ InferenceData object.")
 
-def forest_plot(glm_res, title="Adjusted odds ratios", ax=None,
-                figsize=None, drop_intercept=True, c="black"):
+    # Check convergence diagnostics
+    summary_stats = az.summary(idata, round_to=2)  # R-hat, ESS
+
+    print(f"min ESS: {summary_stats['ess_bulk'].min():.1f}, max ESS: {summary_stats['ess_bulk'].max():.1f}")
+    print(f"min R-hat: {summary_stats['r_hat'].min():.3f}, max R-hat: {summary_stats['r_hat'].max():.3f}")
+
+    if summary_stats['ess_bulk'].min() < 500:
+        print("⚠️ ‼️ Warning: ESS is below 2000, indicating potential convergence issues.")
+    if summary_stats['r_hat'].max() > 1.01:
+        print("⚠️ ‼️ Warning: R-hat is above 1.01, indicating potential convergence issues.")
+
+    loo = az.loo(idata, pointwise=True)
+    print(loo)
+
+    if not short:
+        az.plot_trace(idata, figsize=(8, 20))
+        print(summary_stats)
+    return summary_stats
+
+# ============================================================================
+# VISUALIZATION AND PLOTTING FUNCTIONS
+# ============================================================================
+
+def create_forest_plot(data, title, color='navy'):
     """
-    Draw a horizontal forest plot of ORs with 95 % CIs.
-
-    Returns
-    -------
-    ax  (matplotlib Axes)
-    """
-    tbl = tidy_glm_or_table(glm_res, drop_intercept=drop_intercept, digits=3)
-    if figsize is None:
-        figsize = (6, 0.5 + 0.4 * len(tbl))
-
-    if ax is None:
-        fig, ax = plt.subplots(figsize=figsize)
-
-    y = np.arange(len(tbl))[::-1]           # top-to-bottom
-    ax.hlines(y, tbl["OR_low"], tbl["OR_high"], color=c, lw=2)
-    ax.scatter(tbl["OR"], y, color=c, s=45, zorder=5)
-
-    ax.axvline(1, color="grey", ls="--", lw=1)
-    ax.set_xscale("log")
-    ax.set_xlabel("Odds ratio (log scale)")
-    ax.set_yticks(y)
-    ax.set_yticklabels(tbl.index)
-    ax.set_title(title)
-    plt.tight_layout()
-    return ax
-
-# Create publication-friendly forest plots
-def create_forest_plot(data, title, color='navy', category_labels=None, reference_labels=None):
-    """
-    Create publication-friendly forest plots.
+    Create publication-friendly forest plots with categorical organization.
     
     Parameters:
     -----------
     data : DataFrame with columns OR, OR_low, OR_high
     title : str, plot title
     color : str, color for points and lines
-    category_labels : dict, mapping from variable names to clean category labels
-    reference_labels : dict, mapping from variable names to reference category names
+    
+    Returns:
+    --------
+    tuple of (fig, ax) objects
     """
     if len(data) == 0:
-        return
+        print("No data to plot")
+        return None, None
     
-    # Clean up variable names for publication using shared function
-    clean_labels = [clean_variable_name(idx, for_plot=True) for idx in data.index]
+    # Use variable parsing to organize by categories
+    var_info = parse_model_variables(data.index.tolist())
     
-    # Handle category-based grouping if category column exists
-    has_categories = 'category' in data.columns
-    if has_categories:
-        # Sort by category for better organization
-        data_sorted = data.copy()
-        category_order = ['First Author', 'Leading Author', 'Paper/Journal', 'Lowest Effects', 'Highest Effects']
-        data_sorted['category_num'] = data_sorted['category'].map(
-            {cat: i for i, cat in enumerate(category_order)}
-        ).fillna(999)
-        data_sorted = data_sorted.sort_values(['category_num', 'OR'], ascending=[True, False])
+    # Build plot items with category headers
+    plot_items = []
+    for category, var_names in var_info['category_mapping'].items():
+        # Add category header
+        plot_items.append((category, None, True))
         
-        # Update clean_labels for sorted data and create spaced layout
-        clean_labels_spaced = []
-        y_positions_spaced = []
-        colors_spaced = []
-        data_rows = []
-        
-        current_category = None
-        y_pos = 0
-        
-        # Define colors for each category
-        category_colors = {
-            'First Author': 'blue',
-            'Leading Author': 'green', 
-            'Paper/Journal': 'orange',
-            'Lowest Effects': 'red',
-            'Highest Effects': 'darkgreen'
-        }
-        
-        for idx, row in data_sorted.iterrows():
-            if row['category'] != current_category:
-                if current_category is not None:
-                    # Add spacing for category separation
-                    y_pos += 1
-                
-                # Add category header
-                clean_labels_spaced.append(f"{row['category']} Effects")
-                y_positions_spaced.append(y_pos)
-                colors_spaced.append('black')  # Category headers in black
-                data_rows.append(None)  # No data for category headers
-                y_pos += 1
-                
-                current_category = row['category']
-            
-            # Add the actual data point
-            clean_label = clean_variable_name(idx, for_plot=True)
-            clean_labels_spaced.append(clean_label)
-            y_positions_spaced.append(y_pos)
-            colors_spaced.append(category_colors.get(row['category'], color))
-            data_rows.append(row)
-            y_pos += 1
-        
-        clean_labels = clean_labels_spaced
-        y_positions = y_positions_spaced
-        colors = colors_spaced
-        data_for_plot = data_rows
-    else:
-        colors = [color] * len(data)
-        y_positions = np.arange(len(data))
-        data_for_plot = [row for idx, row in data.iterrows()]
+        # Add variables under this category
+        for var_name in var_names:
+            if var_name in data.index:
+                var_idx = data.index.tolist().index(var_name)
+                clean_name = var_info['clean_names'][var_idx]
+                indented_name = f"    {clean_name}"  # Indent subcategories
+                plot_items.append((indented_name, data.loc[var_name], False))
+    
+    # Extract components for plotting
+    clean_labels = [item[0] for item in plot_items]
+    data_for_plot = [item[1] for item in plot_items]
+    is_header = [item[2] for item in plot_items]
+    y_positions = list(range(len(plot_items)))
     
     # Create the plot
-    fig, ax = plt.subplots(figsize=(12, max(6, len(clean_labels)*0.4)))
+    fig, ax = plt.subplots(figsize=(8, max(4, len(clean_labels)*0.3)))
     
-    # Determine plot limits to handle extreme values
-    all_ors = []
-    all_or_lows = []
-    all_or_highs = []
-    for data_row in data_for_plot:
-        if data_row is not None:
-            all_ors.append(data_row['OR'])
-            all_or_lows.append(data_row['OR_low'])
-            all_or_highs.append(data_row['OR_high'])
+    # Determine plot limits
+    all_or_lows = [row['OR_low'] for row in data_for_plot if row is not None]
+    all_or_highs = [row['OR_high'] for row in data_for_plot if row is not None]
     
-    # Set reasonable plot limits
     min_or = min(all_or_lows) if all_or_lows else 0.1
     max_or = max(all_or_highs) if all_or_highs else 10
     
-    # Define extreme value thresholds
-    lower_threshold = 0.001
-    upper_threshold = 10
-    
-    # Set plot limits with some padding
-    plot_min = max(min_or * 0.8, lower_threshold * 0.1)
-    plot_max = min(max_or * 1.2, upper_threshold * 10)
+    # Set plot limits with padding
+    plot_min = max(min_or * 0.8, 0.01)
+    plot_max = min(max_or * 1.2, 100)
     
     # Plot error bars and points 
-    for i, (y_pos, data_row, point_color) in enumerate(zip(y_positions, data_for_plot, colors)):
+    for y_pos, data_row in zip(y_positions, data_for_plot):
         if data_row is not None:  # Skip category headers
             or_val = data_row['OR']
-            or_low = data_row['OR_low']
+            or_low = data_row['OR_low'] 
             or_high = data_row['OR_high']
             
-            # Check for extreme values
-            has_extreme_low = or_low < lower_threshold
-            has_extreme_high = or_high > upper_threshold
-            
-            # Adjust values for plotting if extreme
-            plot_or_low = max(or_low, plot_min)
-            plot_or_high = min(or_high, plot_max)
-            plot_or = or_val
-            
-            # Plot the main error bar
-            ax.errorbar(plot_or, y_pos,
-                        xerr=[[plot_or-plot_or_low], [plot_or_high-plot_or]],
-                        fmt='o', color=point_color, ecolor='lightgray', capsize=4, 
+            ax.errorbar(or_val, y_pos,
+                        xerr=[[or_val-or_low], [or_high-or_val]],
+                        fmt='o', color=color, ecolor='lightgray', capsize=4, 
                         markersize=6, linewidth=2)
-            
-            # Add arrows for extreme values
-            if has_extreme_low:
-                # Left arrow for extremely small values
-                ax.annotate('', xy=(plot_min, y_pos), xytext=(plot_min * 1.5, y_pos),
-                           arrowprops=dict(arrowstyle='<-', color=point_color, lw=2))
-                
-            if has_extreme_high:
-                # Right arrow for extremely large values  
-                ax.annotate('', xy=(plot_max, y_pos), xytext=(plot_max * 0.7, y_pos),
-                           arrowprops=dict(arrowstyle='->', color=point_color, lw=2))
     
     # Reference line at OR = 1
     ax.axvline(1, ls='--', color='red', alpha=0.7, linewidth=1)
     
-    # Formatting - publication ready
+    # Formatting
     ax.set_yticks(y_positions)
-    ax.set_yticklabels(clean_labels, fontsize=10)
+    ax.set_yticklabels(clean_labels, fontsize=MEDIUM_SIZE)
     
     # Make category headers bold
-    for i, label in enumerate(clean_labels):
-        if 'Effects' in label and data_for_plot[i] is None:
+    for i, is_hdr in enumerate(is_header):
+        if is_hdr:
             ax.get_yticklabels()[i].set_fontweight('bold')
-            ax.get_yticklabels()[i].set_fontsize(11)
+            ax.get_yticklabels()[i].set_fontsize(BIGGER_SIZE)
     
-    ax.set_xlabel("Odds Ratio", fontsize=12, fontweight='bold')
+    ax.set_xlabel("Odds Ratio", fontsize=MEDIUM_SIZE)
     ax.set_xscale('log')
-    ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
-    
-    # Set x-axis limits to handle extreme values
+    ax.set_title(title, fontsize=BIGGER_SIZE, pad=20)
     ax.set_xlim(plot_min, plot_max)
     
-    # Remove spines and ticks for publication quality
+    # Clean styling
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
-    ax.tick_params(left=False)  # Remove left ticks
-    
-    # Create legend for categories if needed
-    if has_categories and len(set(data['category'])) > 1:
-        legend_elements = []
-        unique_categories = data['category'].unique()
-        for cat in ['First Author', 'Leading Author', 'Paper/Journal', 'Lowest Effects', 'Highest Effects']:
-            if cat in unique_categories:
-                col = category_colors[cat]
-                legend_elements.append(plt.Line2D([0], [0], marker='o', color='w', 
-                                                markerfacecolor=col, markersize=8, label=cat))
-        if legend_elements:
-            ax.legend(handles=legend_elements, loc='lower right', frameon=True, fancybox=True)
-    
-    # Add OR values as text annotations
-    for i, (y_pos, data_row) in enumerate(zip(y_positions, data_for_plot)):
-        if data_row is not None:  # Only annotate actual data points, not category headers
-            or_val = data_row['OR']
-            or_low = data_row['OR_low']
-            or_high = data_row['OR_high']
-            
-            # Format the annotation text with extreme value indicators
-            or_low_text = f"<{lower_threshold:.3f}" if or_low < lower_threshold else f"{or_low:.2f}"
-            or_high_text = f">{upper_threshold:.0f}" if or_high > upper_threshold else f"{or_high:.2f}"
-            
-            # Position annotation text appropriately
-            text_x = min(or_val * 1.1, plot_max * 0.95)
-            
-            ax.text(text_x, y_pos, f'{or_val:.2f}\n[{or_low_text}, {or_high_text}]', 
-                    ha='left', va='center', fontsize=8, alpha=0.8)
-    
-    # Grid for easier reading
+    ax.tick_params(left=False)
     ax.grid(True, alpha=0.3, axis='x')
     ax.set_axisbelow(True)
     
-    # Add note about extreme values if any are present
-    has_any_extreme = any(
-        (data_row is not None and (data_row['OR_low'] < lower_threshold or data_row['OR_high'] > upper_threshold))
-        for data_row in data_for_plot
-    )
-    
-    if has_any_extreme:
-        note_text = f"Note: Arrows indicate confidence intervals extending beyond {lower_threshold:.3f} or {upper_threshold:.0f}"
-        ax.text(0.5, -0.1, note_text, transform=ax.transAxes, 
-                ha='center', va='top', fontsize=9, style='italic', alpha=0.7)
-    
-    # Adjust layout for publication quality
     plt.tight_layout()
-    plt.subplots_adjust(left=0.35, right=0.85, top=0.9, bottom=0.15)  # More bottom space for note
-    return fig, ax  # Return figure and axis for notebook display
+    return fig, ax
 
 # Convenience function for random effects forest plots
 def create_random_effects_forest_plot(random_effects_summary, title, color='navy', n_show=15):
@@ -425,113 +421,132 @@ def create_random_effects_forest_plot(random_effects_summary, title, color='navy
     combined_effects['OR_low'] = np.exp(combined_effects['hdi_3%'])
     combined_effects['OR_high'] = np.exp(combined_effects['hdi_97%'])
     
-    # Add category information for grouping
-    combined_effects['category'] = ['Lowest Effects'] * len(bottom_effects) + ['Highest Effects'] * len(top_effects)
-    
     # Use the main forest plot function
     return create_forest_plot(combined_effects, f'{title}\n(Top/Bottom {n_show} Effects)', color)
 
-# Shared function to clean variable names for both plots and tables
-def clean_variable_name(var_name, for_plot=False):
+def create_elegant_forest_plot(data, title, figsize=(10, 8), **kwargs):
     """
-    Clean a single variable name for publication-ready display.
+    Create an elegant forest plot using the forestplot package.
     
     Parameters:
     -----------
-    var_name : str, original variable name
-    for_plot : bool, if True, return format suitable for plots; if False, for tables
+    data : DataFrame with columns OR, OR_low, OR_high and index as variable names
+    title : str, plot title
+    figsize : tuple, figure size
+    **kwargs : additional arguments passed to forestplot
     
     Returns:
     --------
-    str, cleaned variable name
+    matplotlib axes object
     """
-    clean_name = var_name
+    # Use bulletproof parsing for variable labels and groups
+    var_info = parse_model_variables(data.index.tolist())
     
-    # Handle categorical variables with Treatment specification
-    if 'C(' in clean_name and 'Treatment(' in clean_name:
-        # Extract variable name and category
-        parts = clean_name.split("', Treatment('")
-        if len(parts) == 2:
-            var_part = parts[0].replace("C(", "").replace("'", "")
-            ref_part = parts[1].replace("'))", "").replace("[", ": ").replace("]", "")
-            
-            # Clean variable names
-            if var_part == 'PhD_Postdoc':
-                var_display = 'PhD/Postdoc'
-            elif var_part == 'journal_category':
-                var_display = 'Journal Category'
-            elif var_part == 'ranking_category':
-                var_display = 'University Ranking'
-            elif var_part == 'First_Author_Sex':
-                var_display = 'First Author Sex'
-            elif var_part == 'Leading_Author_Sex':
-                var_display = 'Leading Author Sex'
-            elif var_part == 'Junior_Senior':
-                var_display = 'Seniority'
-            elif var_part == 'highest_impact_journal':
-                var_display = 'Highest Impact Journal'
-            elif var_part == 'highest_ranking_institution':
-                var_display = 'Highest Ranking Institution'
-            else:
-                var_display = var_part.replace('_', ' ').title()
-            
-            # Get reference category name - clean it up
-            ref_clean = ref_part.replace("'", "")
-            
-            if for_plot:
-                clean_name = f"{var_display}: {ref_part} (vs {ref_clean})"
-            else:
-                clean_name = f"{var_display}: {ref_part}"
+    # Prepare data for forestplot package
+    plot_data = data.copy()
     
-    # Handle continuous variables
-    elif 'log_num_papers' in clean_name:
-        clean_name = 'Log(Number of Papers)'
-    elif 'year_s' in clean_name:
-        clean_name = clean_name.replace('year_s', 'Year Spline ')
-    elif 'Intercept' in clean_name:
-        clean_name = 'Intercept'
+    # Use parsed clean names and categories
+    plot_data['varlabel'] = var_info['clean_names']
+    plot_data['group'] = var_info['categories']
     
-    # Handle random effects with author IDs
-    elif '[' in clean_name and ']' in clean_name:
-        author_id = clean_name.split('[')[1].split(']')[0]
-        clean_name = f'Author {author_id[:20]}'  # Truncate long IDs
+    # Add formatted confidence intervals
+    plot_data['est_ci'] = plot_data.apply(
+        lambda row: f"{row['OR']:.2f} ({row['OR_low']:.2f}, {row['OR_high']:.2f})", 
+        axis=1
+    )
     
-    return clean_name
+    # Get unique groups for ordering (preserve order from category_mapping)
+    unique_groups = list(var_info['category_mapping'].keys())
+    
+    # Generate appropriate x-ticks for log scale
+    min_val = plot_data[['OR_low']].min().min()
+    max_val = plot_data[['OR_high']].max().max()
+    
+    # Create log-spaced ticks
+    if min_val < 0.1:
+        xticks = [0.01, 0.1, 0.5, 1, 2, 5, 10]
+    elif min_val < 0.5:
+        xticks = [0.1, 0.5, 1, 2, 5, 10]
+    else:
+        xticks = [0.5, 1, 2, 5, 10]
+    
+    # Filter ticks based on data range
+    xticks = [x for x in xticks if min_val * 0.5 <= x <= max_val * 2]
+    
+    # Set up default parameters
+    default_params = {
+        'estimate': 'OR',
+        'll': 'OR_low', 
+        'hl': 'OR_high',
+        'varlabel': 'varlabel',
+        'annote': ['est_ci'],
+        'annoteheaders': ['OR (95% CI)'],
+        'groupvar': 'group',
+        'group_order': unique_groups,
+        'xlabel': 'Odds Ratio',
+        'sort': False,  # Keep original order
+        'table': True,
+        'figsize': figsize,
+        'logscale': True,
+        #'xticks': xticks,
+        # Styling parameters
+        'marker': 'D',  # Diamond markers
+        'markersize': 35,
+        'xline': 1,  # Reference line at OR = 1
+        'xlinestyle': '--',  # Dashed reference line
+        'xlinecolor': '#808080',  # Gray reference line
+        'xtick_size': MEDIUM_SIZE,
+        'ytick_size': MEDIUM_SIZE,
+        'xlabel_size': MEDIUM_SIZE,
+        'title_size': BIGGER_SIZE,
+        # Table font sizes
+        'annote_size': MEDIUM_SIZE,  # Font size for annotations (table content)
+        'annoteheaders_size': MEDIUM_SIZE,  # Font size for annotation headers
+        'varlabel_size': MEDIUM_SIZE,  # Font size for variable labels
+    }
+    
+    # Update with user-provided kwargs
+    default_params.update(kwargs)
+    
+    # Create the plot
+    ax = fp.forestplot(
+        plot_data,
+        **default_params
+    )
+    
+    # Add title
+    ax.set_title(title, fontsize=BIGGER_SIZE, fontweight='bold', pad=20)
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    return ax
 
-# Function to clean variable names for tables
-def clean_variable_names_for_table(df):
-    """
-    Clean variable names in DataFrame index for publication-ready tables.
-    
-    Parameters:
-    -----------
-    df : DataFrame with variable names as index
-    
-    Returns:
-    --------
-    DataFrame with cleaned index names
-    """
-    df_clean = df.copy()
-    clean_names = [clean_variable_name(idx, for_plot=False) for idx in df.index]
-    df_clean.index = clean_names
-    return df_clean
+# ============================================================================
+# DATA FORMATTING AND EXPORT UTILITIES
+# ============================================================================
 
-# Function to format DataFrame for publication (no scientific notation, 2 decimal places)
-def format_results_table(df, or_columns=['OR', 'OR_low', 'OR_high'], other_columns=None):
+def format_results_table(df, or_columns=['OR', 'OR_low', 'OR_high'], other_columns=None, clean_variable_names=True):
     """
-    Format results table for publication with proper decimal formatting.
+    Format results table for publication with proper decimal formatting and clean variable names.
     
     Parameters:
     -----------
     df : DataFrame with results
     or_columns : list of OR-related columns to format to 2 decimal places
     other_columns : list of other columns to format
+    clean_variable_names : bool, whether to clean variable names in index
     
     Returns:
     --------
-    DataFrame with formatted values
+    DataFrame with formatted values and cleaned variable names
     """
     df_formatted = df.copy()
+    
+    # Clean variable names in index if requested
+    if clean_variable_names and hasattr(df_formatted.index, 'tolist'):
+        var_info = parse_model_variables(df_formatted.index.tolist())
+        df_formatted.index = var_info['clean_names']
     
     # Format OR columns to 2 decimal places
     for col in or_columns:
@@ -553,173 +568,3 @@ def format_results_table(df, or_columns=['OR', 'OR_low', 'OR_high'], other_colum
     return df_formatted
 
 
-def run_BinomialBayesMixedGLM_deprecated():
-    """
-    The model that did not work, see my note
-    """
-    ## The mixed model will use the following covariates:
-    # ---------------------------------------------------------
-    #  Step 0  – define the columns actually used in the model
-    # ---------------------------------------------------------
-    fixed_effect_vars = [
-        'journal_category', 'year_binned', 'First Author Sex', 'Leading Author Sex',
-        'PhD Post-doc', 'Junior Senior', 'Continuity', 'first_paper_before_1995', #'F and L', 
-        'ranking_category'
-    ]
-    random_effect_vars = ['first_author_key', 'leading_author_key']
-    target = ['challenged_flag']
-
-    model_vars = fixed_effect_vars + random_effect_vars + target
-
-    # ---------------------------------------------------------
-    #  Step 1  – drop incomplete rows
-    # ---------------------------------------------------------
-    all_covar_cc = (
-        all_covar
-        .dropna(subset=model_vars)         # complete-case
-        .reset_index(drop=True)
-    )
-
-    print(f"Dropped {len(all_covar) - len(all_covar_cc)} incomplete rows "
-        f"({100*(len(all_covar) - len(all_covar_cc))/len(all_covar):.1f} %).")
-
-    # ---------------------------------------------------------
-    #  Step 2  – re-encode categoricals
-    # ---------------------------------------------------------
-    for c in fixed_effect_vars:
-        all_covar_cc[c] = all_covar_cc[c].astype('category')
-    for c in random_effect_vars:
-        all_covar_cc[c] = all_covar_cc[c].astype('category')
-
-    # replace spaces in column names with underscores
-    all_covar_cc.columns = all_covar_cc.columns.str.replace(' ', '_', regex=False)
-    all_covar_cc.columns = all_covar_cc.columns.str.replace('-', '', regex=False)
-    # ------------------------------------------------------------------
-    # 2) APPROXIMATE FREQUENTIST GLMM  (statsmodels)
-    # ------------------------------------------------------------------
-    import statsmodels.api as sm
-    # bs(year, df=3) # is a B-spline basis expansion of the year variable
-    # could also have used the year as a scale
-    fixef_formula = (
-        "challenged_flag ~ "
-        # paper covariates
-        "C(journal_category, Treatment('Low Impact')) + "
-        "bs(year, df=4) + "
-        "C(ranking_category, Treatment('Not Ranked')) + "
-        # first author covariates
-        "C(First_Author_Sex, Treatment('Male')) + "
-        "C(PhD_Postdoc, Treatment('PhD')) + "
-        # leading author covariates
-        "C(Leading_Author_Sex, Treatment('Male')) + "
-        "C(Junior_Senior, Treatment('Junior PI')) + "
-        "C(Continuity, Treatment(False)) + "
-        # "C(F_and_L, Treatment(False)) + "
-        "C(first_paper_before_1995, Treatment(False))"
-    )
-    vc_formulas = {
-        'first_author': '0 + C(first_author_key)',
-        'leading_author': '0 + C(leading_author_key)'
-    }
-    #vc_formulas = {} # no random effects, just fixed effects
-    glmm = sm.BinomialBayesMixedGLM.from_formula(
-        fixef_formula, vc_formulas, data=all_covar_cc
-    )
-    # result = glmm.fit_vb() # mean-field variational Bayes approximation is fit_vb, faster but worst.
-    # result = glmm.fit_map()
-    result = glmm.fit_map(method='BFGS') 
-
-    print(result.summary())
-
-
-    # ────────────────────────────────────────────────────────────────────────────────
-    # 1.  FIT INFO & SAFE FALL-BACKS
-    # ────────────────────────────────────────────────────────────────────────────────
-    def safe_pseudo_r2(full_prob, y):
-        """McFadden R² using predicted probs; works even when llf/llnull absent."""
-        ll_full = np.sum(y * np.log(full_prob) + (1 - y) * np.log1p(-full_prob))
-        p0 = y.mean()
-        ll_null = np.sum(y * np.log(p0) + (1 - y) * np.log1p(-p0))
-        return 1 - ll_full / ll_null
-
-    # predicted probabilities
-    p_hat = result.predict()
-    mcFadden_R2 = safe_pseudo_r2(p_hat, all_covar_cc.challenged_flag)
-    print(f"McFadden pseudo-R² (manual) = {mcFadden_R2:.3f}")
-
-    # ELBO history is only stored for VB and only in recent versions
-    if hasattr(result, "elbo_history") and result.elbo_history is not None:
-        plt.plot(result.elbo_history)
-        plt.title("Variational Bayes – ELBO by iteration")
-        plt.xlabel("Iteration"); plt.ylabel("ELBO"); plt.tight_layout(); plt.show()
-    else:
-        print("ELBO history not available for this fit (expected for MAP).")
-
-    # ────────────────────────────────────────────────────────────────────────────────
-    # 2.  MULTICOLLINEARITY CHECK ON FIXED EFFECTS
-    # ────────────────────────────────────────────────────────────────────────────────
-    X_fixed = result.model.exog          # design matrix after Patsy
-    vif_series = pd.Series(
-        [variance_inflation_factor(X_fixed, i) for i in range(X_fixed.shape[1])],
-        index=result.model.exog_names, name="VIF"
-    )
-    print("\nPredictors with VIF > 5 (rule-of-thumb flag for collinearity):")
-    print(vif_series[vif_series > 5])    # thresholds 5–10 are common flags:contentReference[oaicite:2]{index=2}:contentReference[oaicite:3]{index=3}
-
-
-    # ---------------------------------------------------------------
-    #  2.  Tidy table of odds ratios + 95 % intervals
-    # ---------------------------------------------------------------
-    fe_mean = result.fe_mean                # posterior mean of fixed effects
-    fe_sd   = result.fe_sd                  # posterior SD (VB ≈ σ)
-    z975    = norm.ppf(0.975)
-    or_df = (pd.DataFrame({
-            'Predictor'  : result.model.exog_names,
-            'logOR'      : fe_mean,
-            'SE'         : fe_sd,
-            'OR'         : np.exp(fe_mean),
-            'CI_low'     : np.exp(fe_mean - z975*fe_sd),
-            'CI_high'    : np.exp(fe_mean + z975*fe_sd)
-        })
-        .assign(Significant = lambda d: (d.CI_low>1) | (d.CI_high<1))
-        .sort_values('OR', ascending=False)
-    )
-    print(or_df)
-
-    # Random-effect ICC: This quantifies how much irreproducibility clusters by person vs lab.
-    try:
-        var_author = result.vc_mean[0]  # first random effect
-        var_lab    = result.vc_mean[1]  # second random effect
-        icc_author = var_author / (var_author + var_lab + np.pi**2/3)
-        icc_lab    = var_lab    / (var_author + var_lab + np.pi**2/3)
-        print(f"ICC first-author = {icc_author:.2%}, lab = {icc_lab:.2%}")
-    except (IndexError, TypeError):
-        print("Cannot calculate ICC - variance components not accessible")
-
-
-    # ---------------------------------------------------------------
-    #  3.  Forest plot
-    # ---------------------------------------------------------------
-    plt.figure(figsize=(6, len(or_df)*0.45))
-    y = np.arange(len(or_df))
-    plt.errorbar(or_df['OR'], y, xerr=[or_df['OR']-or_df['CI_low'], 
-                                    or_df['CI_high']-or_df['OR']],
-                fmt='o', color='navy', ecolor='lightgray', capsize=3)
-    plt.yticks(y, or_df['Predictor'])
-    plt.axvline(1, ls='--', color='red')
-    plt.xlabel("Odds Ratio (log scale)"); plt.xscale('log')
-    plt.title("Adjusted odds ratios for irreproducible claims")
-    plt.tight_layout()
-    plt.savefig("figures/forest_plot_OR.png", dpi=300)
-    plt.show()
-
-    # ────────────────────────────────────────────────────────────────────────────────
-    # 5.  POSTERIOR PREDICTIVE CHECK (MEAN OUTCOME)
-    # ────────────────────────────────────────────────────────────────────────────────
-    n_sims = 400
-    sim_means = np.random.binomial(1, p_hat.reshape(1, -1).repeat(n_sims, axis=0)).mean(axis=1)
-    sns.histplot(sim_means, bins=30, color='skyblue'); 
-    plt.axvline(all_covar_cc.challenged_flag.mean(), color='black', lw=2, label='Observed');
-    plt.legend(); plt.title("Posterior predictive check (mean challenged rate)");
-    plt.xlabel("Simulated mean"); plt.tight_layout(); plt.show()
-
-()
