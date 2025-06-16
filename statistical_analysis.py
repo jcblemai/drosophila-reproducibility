@@ -224,30 +224,18 @@ pi_coef['OR'] = np.exp(pi_coef['mean'])
 pi_coef['OR_low'] = np.exp(pi_coef['hdi_3%'])
 pi_coef['OR_high'] = np.exp(pi_coef['hdi_97%'])
 
-print("Odds Ratios (95% HDI):")
-print("DEBUG: Raw variable names in pi_coef:")
-for i, var_name in enumerate(pi_coef.index):
-    print(f"  {i}: '{var_name}'")
-    if i >= 10:  # Only show first 10
-        break
-print()
-
-
 pi_coef_formatted = stat_lib.format_results_table(pi_coef, clean_variable_names=True)
 print(pi_coef_formatted[['OR', 'OR_low', 'OR_high']])
 
 
 # Create forest plot for PI model
-fig, ax = stat_lib.create_forest_plot(pi_coef, "Predictors of Becoming a PI", 'purple')
+fig, ax = stat_lib.create_forest_plot(pi_coef)
 plt.show()  # Ensure plot displays in notebook
 
 # Create elegant forest plot using forestplot package
-try:
-    ax_elegant = stat_lib.create_elegant_forest_plot(pi_coef, "Predictors of Becoming a PI")
-    plt.show()
-except Exception as e:
-    print(f"Could not create elegant forest plot: {e}")
-    print("You may need to install forestplot: pip install forestplot")
+ax_elegant = stat_lib.create_elegant_forest_plot(pi_coef)
+plt.show()
+
 
 print("\n=== MODEL SUMMARY ===")
 print(f"Total authors analyzed: {len(author_df)}")
@@ -339,18 +327,15 @@ intercept_effect = coef[coef.index.str.contains('Intercept')]
 
 # Display tables with clean names and formatting
 print("\n--- First Author Effects ---")
-first_author_clean = stat_lib.clean_variable_names_for_table(first_author_effects)
-first_author_formatted = stat_lib.format_results_table(first_author_clean)
+first_author_formatted = stat_lib.format_results_table(first_author_effects, clean_variable_names=True)
 print(first_author_formatted[['OR', 'OR_low', 'OR_high']])
 
 print("\n--- Leading Author Effects ---")
-leading_author_clean = stat_lib.clean_variable_names_for_table(leading_author_effects)
-leading_author_formatted = stat_lib.format_results_table(leading_author_clean)
+leading_author_formatted = stat_lib.format_results_table(leading_author_effects, clean_variable_names=True)
 print(leading_author_formatted[['OR', 'OR_low', 'OR_high']])
 
 print("\n--- Paper/Journal Effects ---")
-paper_effects_clean = stat_lib.clean_variable_names_for_table(paper_effects)
-paper_effects_formatted = stat_lib.format_results_table(paper_effects_clean)
+paper_effects_formatted = stat_lib.format_results_table(paper_effects, clean_variable_names=True)
 print(paper_effects_formatted[['OR', 'OR_low', 'OR_high']])
 
 # Create single comprehensive forest plot with all effects
@@ -361,15 +346,12 @@ all_effects = pd.concat([
 ])
 
 # Create the combined forest plot
-fig, ax = stat_lib.create_forest_plot(all_effects, "All Model Effects: Predictors of Challenged Claims", 'navy')
+fig, ax = stat_lib.create_forest_plot(all_effects)
 
-# Create elegant forest plot using forestplot package
-try:
-    ax_elegant = stat_lib.create_elegant_forest_plot(all_effects, "All Model Effects: Predictors of Challenged Claims")
-    plt.show()
-except Exception as e:
-    print(f"Could not create elegant forest plot: {e}")
-    print("You may need to install forestplot: pip install forestplot")
+# Create elegant forest plot using forestplot packages
+ax_elegant = stat_lib.create_elegant_forest_plot(all_effects, "")
+plt.show()
+
 
 
 # ── RANDOM EFFECTS PLOTS ────────────────────

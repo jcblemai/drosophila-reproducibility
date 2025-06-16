@@ -54,10 +54,22 @@ def parse_model_variables(variable_names, formula=None):
             
         # Parse categorical variables: C(variable, Treatment(...))[level]
         if var_name.startswith('C('):
-            # Extract base variable name
+            # Extract base variable name and treatment reference
             end_pos = var_name.find(',')
             if end_pos > 0:
                 base_var = var_name[2:end_pos].strip()
+                
+                # Extract treatment reference
+                treatment_start = var_name.find('Treatment(')
+                treatment_reference = "Unknown"
+                if treatment_start > 0:
+                    treatment_start += len('Treatment(')
+                    treatment_end = var_name.find(')', treatment_start)
+                    if treatment_end > treatment_start:
+                        treatment_reference = var_name[treatment_start:treatment_end].strip()
+                        # Remove quotes if present
+                        if treatment_reference.startswith(("'", '"')) and treatment_reference.endswith(("'", '"')):
+                            treatment_reference = treatment_reference[1:-1]
                 
                 # Extract level from [level]
                 level_start = var_name.rfind('[')
@@ -72,7 +84,7 @@ def parse_model_variables(variable_names, formula=None):
                 
                 # Create clean names
                 category_name = base_var.replace('_', ' ').title()
-                clean_name = level
+                clean_name = f"{level} (vs {treatment_reference})"
                 
                 clean_names.append(clean_name)
                 categories.append(category_name)
@@ -88,6 +100,46 @@ def parse_model_variables(variable_names, formula=None):
             spline_num = var_name.replace('year_s', '')
             category_name = 'Year (Splines)'
             clean_name = f"Spline {spline_num}"
+            
+            clean_names.append(clean_name)
+            categories.append(category_name)
+            is_categorical.append(False)
+            
+            if category_name not in category_mapping:
+                category_mapping[category_name] = []
+            category_mapping[category_name].append(var_name)
+        
+        # Parse random effects: 1|something[value]
+        elif '|' in var_name and '[' in var_name and ']' in var_name:
+            # Extract value from pattern like "1|something[value]"
+            start = var_name.rfind('[')
+            end = var_name.rfind(']')
+            if start > 0 and end > start:
+                clean_name = var_name[start+1:end]
+            else:
+                clean_name = var_name
+            
+            # Extract category from the "something" part between | and [
+            pipe_pos = var_name.find('|')
+            bracket_pos = var_name.find('[')
+            if pipe_pos > 0 and bracket_pos > pipe_pos:
+                something = var_name[pipe_pos+1:bracket_pos]
+                category_name = something.replace('_', ' ').title() + ' Effects'
+            else:
+                category_name = 'Random Effects'
+            
+            clean_names.append(clean_name)
+            categories.append(category_name)
+            is_categorical.append(False)
+            
+            if category_name not in category_mapping:
+                category_mapping[category_name] = []
+            category_mapping[category_name].append(var_name)
+        
+        # Parse specific variables with custom names
+        elif var_name == 'num_papers_std':
+            category_name = 'Productivity'
+            clean_name = 'N Publications'
             
             clean_names.append(clean_name)
             categories.append(category_name)
@@ -295,7 +347,82 @@ def check_model_convergence(short=False, idata=None):
 # VISUALIZATION AND PLOTTING FUNCTIONS
 # ============================================================================
 
-def create_forest_plot(data, title, color='navy'):
+def generate_forest_plot_ticks(data, or_columns=['OR', 'OR_low', 'OR_high']):
+    """
+    Generate appropriate x-axis ticks and limits for forest plots based on data range.
+    Ensures at least one tick on each side of 1 (reference line) and that no 
+    confidence intervals ≥ 0.1 are cut off.
+    
+    Parameters:
+    -----------
+    data : DataFrame with OR columns
+    or_columns : list of column names containing OR values
+    
+    Returns:
+    --------
+    tuple: (ticks_list, plot_min, plot_max)
+    """
+    # Get all OR values from the specified columns
+    all_values = []
+    for col in or_columns:
+        if col in data.columns:
+            all_values.extend(data[col].dropna().tolist())
+    
+    if not all_values:
+        return [0.1, 0.5, 1, 2, 5, 10], 0.05, 20  # Default ticks and limits
+    
+    min_val = min(all_values)
+    max_val = max(all_values)
+    
+    # Determine tick spacing based on data range
+    data_range = max_val / min_val
+    
+    if data_range > 100:  # Large range, use x10 spacing
+        base_ticks = [0.01, 0.1, 1, 10, 100, 1000]
+    else:  # Smaller range, use x5 spacing  
+        base_ticks = [0.01, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]
+    
+    # Filter ticks to reasonable range around data
+    # Extend beyond data by factor of 1.5 on each side (less aggressive)
+    tick_min = min_val / 1.5
+    tick_max = max_val * 1.5
+    
+    filtered_ticks = [tick for tick in base_ticks if tick_min <= tick <= tick_max]
+    
+    # Ensure 1 is always included
+    if 1 not in filtered_ticks:
+        filtered_ticks.append(1)
+    
+    # Ensure we have at least one tick on each side of 1, but don't force symmetry
+    if not any(tick < 1 for tick in filtered_ticks):
+        # Add the largest tick below 1 that's reasonable for the data
+        candidates_below = [tick for tick in base_ticks if tick < 1 and tick >= min_val / 3]
+        if candidates_below:
+            filtered_ticks.append(max(candidates_below))
+        else:
+            filtered_ticks.append(0.1)  # fallback
+    
+    if not any(tick > 1 for tick in filtered_ticks):
+        # Add the smallest tick above 1 that's reasonable for the data
+        candidates_above = [tick for tick in base_ticks if tick > 1 and tick <= max_val * 3]
+        if candidates_above:
+            filtered_ticks.append(min(candidates_above))
+        else:
+            filtered_ticks.append(10)  # fallback
+    
+    ticks = sorted(list(set(filtered_ticks)))
+    
+    # Calculate plot limits ensuring nothing ≥ 0.1 is cut
+    tick_based_min = min(ticks) * 0.8
+    tick_based_max = max(ticks) * 1.2
+    
+    # Ensure data limits are respected, especially for values ≥ 0.1
+    plot_min = min(tick_based_min, min_val * 0.9) if min_val >= 0.1 else tick_based_min
+    plot_max = max(tick_based_max, max_val * 1.1)
+    
+    return ticks, plot_min, plot_max
+
+def create_forest_plot(data, title="", color='black'):
     """
     Create publication-friendly forest plots with categorical organization.
     
@@ -316,19 +443,27 @@ def create_forest_plot(data, title, color='navy'):
     # Use variable parsing to organize by categories
     var_info = parse_model_variables(data.index.tolist())
     
-    # Build plot items with category headers
+    # Build plot items with category headers (reversed order for proper display)
     plot_items = []
-    for category, var_names in var_info['category_mapping'].items():
-        # Add category header
-        plot_items.append((category, None, True))
-        
-        # Add variables under this category
+    categories_list = list(var_info['category_mapping'].items())
+    categories_list.reverse()  # Reverse to show categories above their items
+    
+    for category, var_names in categories_list:
+        # Add variables under this category first
+        var_items = []
         for var_name in var_names:
             if var_name in data.index:
                 var_idx = data.index.tolist().index(var_name)
                 clean_name = var_info['clean_names'][var_idx]
-                indented_name = f"    {clean_name}"  # Indent subcategories
-                plot_items.append((indented_name, data.loc[var_name], False))
+                indented_name = clean_name  # No text indentation, handled by positioning
+                var_items.append((indented_name, data.loc[var_name], False))
+        
+        # Add variables in reverse order
+        var_items.reverse()
+        plot_items.extend(var_items)
+        
+        # Add category header after variables (will appear above due to y-axis direction)
+        plot_items.append((category, None, True))
     
     # Extract components for plotting
     clean_labels = [item[0] for item in plot_items]
@@ -337,18 +472,10 @@ def create_forest_plot(data, title, color='navy'):
     y_positions = list(range(len(plot_items)))
     
     # Create the plot
-    fig, ax = plt.subplots(figsize=(8, max(4, len(clean_labels)*0.3)))
+    fig, ax = plt.subplots(figsize=(12, max(4, len(clean_labels)*0.6)))
     
-    # Determine plot limits
-    all_or_lows = [row['OR_low'] for row in data_for_plot if row is not None]
-    all_or_highs = [row['OR_high'] for row in data_for_plot if row is not None]
-    
-    min_or = min(all_or_lows) if all_or_lows else 0.1
-    max_or = max(all_or_highs) if all_or_highs else 10
-    
-    # Set plot limits with padding
-    plot_min = max(min_or * 0.8, 0.01)
-    plot_max = min(max_or * 1.2, 100)
+    # Generate appropriate ticks and plot limits
+    ticks, plot_min, plot_max = generate_forest_plot_ticks(data)
     
     # Plot error bars and points 
     for y_pos, data_row in zip(y_positions, data_for_plot):
@@ -359,7 +486,7 @@ def create_forest_plot(data, title, color='navy'):
             
             ax.errorbar(or_val, y_pos,
                         xerr=[[or_val-or_low], [or_high-or_val]],
-                        fmt='o', color=color, ecolor='lightgray', capsize=4, 
+                        fmt='o', color=color, ecolor='black', capsize=4, 
                         markersize=6, linewidth=2)
     
     # Reference line at OR = 1
@@ -369,14 +496,23 @@ def create_forest_plot(data, title, color='navy'):
     ax.set_yticks(y_positions)
     ax.set_yticklabels(clean_labels, fontsize=MEDIUM_SIZE)
     
-    # Make category headers bold
+    # Position category headers and items completely outside plot area
     for i, is_hdr in enumerate(is_header):
         if is_hdr:
+            # Category headers: bold, left-aligned, outside plot area
             ax.get_yticklabels()[i].set_fontweight('bold')
-            ax.get_yticklabels()[i].set_fontsize(BIGGER_SIZE)
+            ax.get_yticklabels()[i].set_fontsize(MEDIUM_SIZE)
+            ax.get_yticklabels()[i].set_horizontalalignment('left')
+            ax.get_yticklabels()[i].set_x(-0.35)  # Far left, outside plot
+        else:
+            # Category items: normal weight, indented but outside plot
+            ax.get_yticklabels()[i].set_horizontalalignment('left')
+            ax.get_yticklabels()[i].set_x(-0.30)  # Indented from category headers
     
-    ax.set_xlabel("Odds Ratio", fontsize=MEDIUM_SIZE)
+    ax.set_xlabel("Odds Ratio (log scale)", fontsize=MEDIUM_SIZE)
     ax.set_xscale('log')
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([str(tick) for tick in ticks])
     ax.set_title(title, fontsize=BIGGER_SIZE, pad=20)
     ax.set_xlim(plot_min, plot_max)
     
@@ -388,14 +524,16 @@ def create_forest_plot(data, title, color='navy'):
     ax.grid(True, alpha=0.3, axis='x')
     ax.set_axisbelow(True)
     
+    # Adjust layout to prevent label overlap with plot area
     plt.tight_layout()
+    #plt.subplots_adjust(left=0.1)  # Increase left margin more for labels
     return fig, ax
 
 # Convenience function for random effects forest plots
 def create_random_effects_forest_plot(random_effects_summary, title, color='navy', n_show=15):
     """
     Create forest plot for random effects (top and bottom effects).
-    Uses the main create_forest_plot function under the hood.
+    Creates a simple forest plot without categorical organization.
     
     Parameters:
     -----------
@@ -421,10 +559,53 @@ def create_random_effects_forest_plot(random_effects_summary, title, color='navy
     combined_effects['OR_low'] = np.exp(combined_effects['hdi_3%'])
     combined_effects['OR_high'] = np.exp(combined_effects['hdi_97%'])
     
-    # Use the main forest plot function
-    return create_forest_plot(combined_effects, f'{title}\n(Top/Bottom {n_show} Effects)', color)
+    # Create simple forest plot without categories
+    fig, ax = plt.subplots(figsize=(12, max(4, len(combined_effects)*0.6)))
+    
+    # Generate appropriate ticks and plot limits
+    ticks, plot_min, plot_max = generate_forest_plot_ticks(combined_effects)
+    
+    # Use cleaned labels from parse_model_variables
+    y_positions = range(len(combined_effects))
+    var_info = parse_model_variables(combined_effects.index.tolist())
+    labels = var_info['clean_names']
+    
+    # Plot error bars and points 
+    for i, (_, row) in enumerate(combined_effects.iterrows()):
+        or_val = row['OR']
+        or_low = row['OR_low'] 
+        or_high = row['OR_high']
+        
+        ax.errorbar(or_val, i,
+                    xerr=[[or_val-or_low], [or_high-or_val]],
+                    fmt='o', color=color, ecolor='black', capsize=4, 
+                    markersize=6, linewidth=2)
+    
+    # Reference line at OR = 1
+    ax.axvline(1, ls='--', color='red', alpha=0.7, linewidth=1)
+    
+    # Formatting
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(labels, fontsize=MEDIUM_SIZE)
+    ax.set_xlabel("Odds Ratio (log scale)", fontsize=MEDIUM_SIZE)
+    ax.set_xscale('log')
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([str(tick) for tick in ticks])
+    ax.set_title(f'{title}\n(Top/Bottom {n_show} Effects)', fontsize=BIGGER_SIZE, pad=20)
+    ax.set_xlim(plot_min, plot_max)
+    
+    # Clean styling
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.tick_params(left=False)
+    ax.grid(True, alpha=0.3, axis='x')
+    ax.set_axisbelow(True)
+    
+    plt.tight_layout()
+    return fig, ax
 
-def create_elegant_forest_plot(data, title, figsize=(10, 8), **kwargs):
+def create_elegant_forest_plot(data, title="", figsize=(15, 8), **kwargs):
     """
     Create an elegant forest plot using the forestplot package.
     
@@ -445,33 +626,26 @@ def create_elegant_forest_plot(data, title, figsize=(10, 8), **kwargs):
     # Prepare data for forestplot package
     plot_data = data.copy()
     
-    # Use parsed clean names and categories
+    
     plot_data['varlabel'] = var_info['clean_names']
     plot_data['group'] = var_info['categories']
     
+
     # Add formatted confidence intervals
     plot_data['est_ci'] = plot_data.apply(
         lambda row: f"{row['OR']:.2f} ({row['OR_low']:.2f}, {row['OR_high']:.2f})", 
         axis=1
     )
     
-    # Get unique groups for ordering (preserve order from category_mapping)
-    unique_groups = list(var_info['category_mapping'].keys())
+    # Reset index to ensure clean data for forestplot package
+    plot_data = plot_data.reset_index(drop=True)
     
-    # Generate appropriate x-ticks for log scale
-    min_val = plot_data[['OR_low']].min().min()
-    max_val = plot_data[['OR_high']].max().max()
+    # Get unique groups for ordering - use actual groups in the data to avoid misalignment
+    unique_groups = plot_data['group'].unique().tolist()
     
-    # Create log-spaced ticks
-    if min_val < 0.1:
-        xticks = [0.01, 0.1, 0.5, 1, 2, 5, 10]
-    elif min_val < 0.5:
-        xticks = [0.1, 0.5, 1, 2, 5, 10]
-    else:
-        xticks = [0.5, 1, 2, 5, 10]
-    
-    # Filter ticks based on data range
-    xticks = [x for x in xticks if min_val * 0.5 <= x <= max_val * 2]
+    # Generate appropriate x-ticks using our custom function
+    xticks, _, _ = generate_forest_plot_ticks(plot_data)
+    print(f"Generated x-ticks: {xticks}")
     
     # Set up default parameters
     default_params = {
@@ -483,21 +657,21 @@ def create_elegant_forest_plot(data, title, figsize=(10, 8), **kwargs):
         'annoteheaders': ['OR (95% CI)'],
         'groupvar': 'group',
         'group_order': unique_groups,
-        'xlabel': 'Odds Ratio',
+        'xlabel': 'Odds Ratio (log scale)',
         'sort': False,  # Keep original order
         'table': True,
         'figsize': figsize,
         'logscale': True,
-        #'xticks': xticks,
+        'xticks': xticks,
         # Styling parameters
         'marker': 'D',  # Diamond markers
         'markersize': 35,
         'xline': 1,  # Reference line at OR = 1
         'xlinestyle': '--',  # Dashed reference line
-        'xlinecolor': '#808080',  # Gray reference line
+        'xlinecolor': '#000000',  # Gray reference line
         'xtick_size': MEDIUM_SIZE,
         'ytick_size': MEDIUM_SIZE,
-        'xlabel_size': MEDIUM_SIZE,
+        'xlabel_size': SMALL_SIZE,
         'title_size': BIGGER_SIZE,
         # Table font sizes
         'annote_size': MEDIUM_SIZE,  # Font size for annotations (table content)
@@ -546,7 +720,12 @@ def format_results_table(df, or_columns=['OR', 'OR_low', 'OR_high'], other_colum
     # Clean variable names in index if requested
     if clean_variable_names and hasattr(df_formatted.index, 'tolist'):
         var_info = parse_model_variables(df_formatted.index.tolist())
-        df_formatted.index = var_info['clean_names']
+        # For tables, concatenate category and clean name
+        table_names = []
+        for i, clean_name in enumerate(var_info['clean_names']):
+            category = var_info['categories'][i]
+            table_names.append(f"{category}: {clean_name}")
+        df_formatted.index = table_names
     
     # Format OR columns to 2 decimal places
     for col in or_columns:
