@@ -230,11 +230,17 @@ print(pi_coef_formatted[['OR', 'OR_low', 'OR_high']])
 
 # Create forest plot for PI model
 fig, ax = stat_lib.create_forest_plot(pi_coef)
+plt.savefig('figM1_forest_plot.png', dpi=300, bbox_inches='tight')
 plt.show()  # Ensure plot displays in notebook
 
 # Create elegant forest plot using forestplot package
 ax_elegant = stat_lib.create_elegant_forest_plot(pi_coef)
+plt.savefig('figM1_elegant_forest_plot.png', dpi=300, bbox_inches='tight')
 plt.show()
+
+# Save PI model table
+pi_coef_formatted.to_csv('tableM1_pi_model_results.csv')
+print("Saved PI model results to tableM1_pi_model_results.csv")
 
 
 print("\n=== MODEL SUMMARY ===")
@@ -347,10 +353,22 @@ all_effects = pd.concat([
 
 # Create the combined forest plot
 fig, ax = stat_lib.create_forest_plot(all_effects)
+plt.savefig('figM2_forest_plot.png', dpi=300, bbox_inches='tight')
 
 # Create elegant forest plot using forestplot packages
 ax_elegant = stat_lib.create_elegant_forest_plot(all_effects, "")
+plt.savefig('figM2_elegant_forest_plot.png', dpi=300, bbox_inches='tight')
 plt.show()
+
+# Save all model tables
+first_author_formatted.to_csv('tableM2_first_author_effects.csv')
+leading_author_formatted.to_csv('tableM2_leading_author_effects.csv')
+paper_effects_formatted.to_csv('tableM2_paper_journal_effects.csv')
+
+# Save combined effects table
+all_effects_formatted = stat_lib.format_results_table(all_effects, clean_variable_names=True)
+all_effects_formatted.to_csv('tableM2_all_effects.csv')
+print("Saved Model 2 results to tableM2_*.csv files")
 
 
 
@@ -379,6 +397,104 @@ for var_type, fa_var in fa_vars.items():
     # Create publication-friendly forest plot for random effects
     fig, ax = stat_lib.create_random_effects_forest_plot(fa_summary, f"{var_type} Author Random Effects", 'darkgreen')
     plt.show()  # Ensure plot displays in notebook
+
+# %%
+# ── SLOPEGRAPH: AUTHORS IN BOTH ROLES ────────────────────
+print("\n=== ANALYSIS: AUTHORS IN BOTH FIRST AND LEADING AUTHOR ROLES ===")
+
+# Get unique first authors and leading authors
+first_authors = set(all_covar['first_author_key'].dropna())
+leading_authors = set(all_covar['leading_author_key'].dropna())
+
+# Find authors who appear in both roles
+dual_role_authors = first_authors.intersection(leading_authors)
+print(f"Found {len(dual_role_authors)} authors who published as both first and leading author")
+
+# Calculate challenge rates for each role
+dual_role_data = []
+
+for author_key in dual_role_authors:
+    # First author challenge rate
+    fa_claims = all_covar[all_covar['first_author_key'] == author_key]
+    fa_total = len(fa_claims)
+    fa_challenged = (fa_claims['assessment_type_grouped'] == 'Challenged').sum()
+    fa_rate = fa_challenged / fa_total
     
+    # Leading author challenge rate  
+    la_claims = all_covar[all_covar['leading_author_key'] == author_key]
+    la_total = len(la_claims)
+    la_challenged = (la_claims['assessment_type_grouped'] == 'Challenged').sum()
+    la_rate = la_challenged / la_total
+    
+    # Only include authors with at least 1 claim in each role
+    
+    dual_role_data.append({
+        'author_key': author_key,
+        'fa_rate': fa_rate * 100,  # Convert to percentage
+        'la_rate': la_rate * 100,
+        'fa_total': fa_total,
+        'la_total': la_total
+    })
+
+dual_role_df = pd.DataFrame(dual_role_data)
+print(f"Included {len(dual_role_df)} authors with claims in both roles")
+
+# Create slopegraph
+
+fig, ax = plt.subplots(figsize=(10, 8))
+
+# Count increases and decreases
+increased = (dual_role_df['la_rate'] > dual_role_df['fa_rate']).sum()
+decreased = (dual_role_df['la_rate'] < dual_role_df['fa_rate']).sum()
+unchanged = (dual_role_df['la_rate'] == dual_role_df['fa_rate']).sum()
+
+# Plot lines connecting each author's rates
+for _, row in dual_role_df.iterrows():
+    ax.plot([1, 2], [row['fa_rate'], row['la_rate']], 
+            color='gray', alpha=0.6, linewidth=1)
+
+# Add average lines
+fa_mean = dual_role_df['fa_rate'].mean()
+la_mean = dual_role_df['la_rate'].mean()
+ax.plot([1, 2], [fa_mean, la_mean], 
+        color='red', linewidth=3, label=f'Average')
+
+# Formatting
+ax.set_xlim(0.8, 2.2)
+ax.set_ylim(0, max(dual_role_df[['fa_rate', 'la_rate']].max().max() * 1.1, fa_mean + 10, la_mean + 10))
+ax.set_xticks([1, 2])
+ax.set_xticklabels(['First Author', 'Leading Author'], fontsize=14)
+ax.set_ylabel('% Claims Challenged', fontsize=12)
+ax.set_title('Challenge Rates: Authors in Both First and Leading Author Roles', 
+            fontsize=14, pad=20)
+
+# Add percentage labels on left and right
+ax.text(0.85, fa_mean, f'{fa_mean:.1f}%', ha='right', va='center', fontweight='bold', color='red', fontsize=12)
+ax.text(2.15, la_mean, f'{la_mean:.1f}%', ha='left', va='center', fontweight='bold', color='red', fontsize=12)
+
+# Despine - remove all spines except bottom
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+ax.spines['left'].set_visible(False)
+ax.tick_params(left=False)  # Remove left ticks
+ax.grid(True, alpha=0.3, axis='y')
+
+plt.tight_layout()
+plt.savefig('figM3_slopegraph_dual_role_authors.png', dpi=300, bbox_inches='tight')
+plt.show()
+
+# Save the data
+dual_role_df.to_csv('tableM3_dual_role_authors.csv', index=False)
+    
+# Summary statistics
+print(f"\nSummary:")
+print(f"Average challenge rate as First Author: {fa_mean:.1f}%")
+print(f"Average challenge rate as Leading Author: {la_mean:.1f}%")
+print(f"Difference (LA - FA): {la_mean - fa_mean:.1f} percentage points")
+print(f"\nAuthor-level changes:")
+print(f"  {increased} authors ({increased/len(dual_role_df)*100:.1f}%) had higher challenge rates as Leading Author")
+print(f"  {decreased} authors ({decreased/len(dual_role_df)*100:.1f}%) had lower challenge rates as Leading Author")
+if unchanged > 0:
+    print(f"  {unchanged} authors ({unchanged/len(dual_role_df)*100:.1f}%) had the same challenge rate in both roles")
 
 
