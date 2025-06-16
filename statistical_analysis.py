@@ -400,101 +400,96 @@ for var_type, fa_var in fa_vars.items():
 
 # %%
 # ── SLOPEGRAPH: AUTHORS IN BOTH ROLES ────────────────────
-print("\n=== ANALYSIS: AUTHORS IN BOTH FIRST AND LEADING AUTHOR ROLES ===")
 
-# Get unique first authors and leading authors
-first_authors = set(all_covar['first_author_key'].dropna())
-leading_authors = set(all_covar['leading_author_key'].dropna())
+# %%
+df=  all_covar.copy()
+fa    = df.groupby('first_author_key')['challenged_flag'].agg(['sum','count'])
+la    = df.groupby('leading_author_key')['challenged_flag'].agg(['sum','count'])
+both  = fa.join(la, lsuffix='_fa', rsuffix='_la').dropna()   # n ≈ 50–60?
 
-# Find authors who appear in both roles
-dual_role_authors = first_authors.intersection(leading_authors)
-print(f"Found {len(dual_role_authors)} authors who published as both first and leading author")
+# 2. proportions and difference
+both['prop_fa'] = both['sum_fa'] / both['count_fa']
+both['prop_la'] = both['sum_la'] / both['count_la']
+both['diff']    = both['prop_la'] - both['prop_fa']
 
-# Calculate challenge rates for each role
-dual_role_data = []
 
-for author_key in dual_role_authors:
-    # First author challenge rate
-    fa_claims = all_covar[all_covar['first_author_key'] == author_key]
-    fa_total = len(fa_claims)
-    fa_challenged = (fa_claims['assessment_type_grouped'] == 'Challenged').sum()
-    fa_rate = fa_challenged / fa_total
-    
-    # Leading author challenge rate  
-    la_claims = all_covar[all_covar['leading_author_key'] == author_key]
-    la_total = len(la_claims)
-    la_challenged = (la_claims['assessment_type_grouped'] == 'Challenged').sum()
-    la_rate = la_challenged / la_total
-    
-    # Only include authors with at least 1 claim in each role
-    
-    dual_role_data.append({
-        'author_key': author_key,
-        'fa_rate': fa_rate * 100,  # Convert to percentage
-        'la_rate': la_rate * 100,
-        'fa_total': fa_total,
-        'la_total': la_total
-    })
+fig, ax = plt.subplots(figsize=(6, 6))
+# jitter x positions: 0 = first, 1 = last
+x0, x1 = np.zeros(len(both)), np.ones(len(both))
+for i, row in both.iterrows():
+    c = 'red' if row['diff'] > 0 else 'green'
+    ax.plot([0, 1], [row['prop_fa'], row['prop_la']], c=c, alpha=.6, lw=1)
+    ax.scatter([0], [row['prop_fa']],  c=c, s=21)
+    ax.scatter([1], [row['prop_la']],  c=c, s=21)
 
-dual_role_df = pd.DataFrame(dual_role_data)
-print(f"Included {len(dual_role_df)} authors with claims in both roles")
+# Add mean line
+mean_fa = both['prop_fa'].mean()
+mean_la = both['prop_la'].mean()
+ax.plot([0, 1], [mean_fa, mean_la], 'black', lw=3, alpha=0.8, label='Mean')
+ax.scatter([0], [mean_fa],  c=c, s=21)
+ax.scatter([1], [mean_la],  c=c, s=21)
 
-# Create slopegraph
-
-fig, ax = plt.subplots(figsize=(10, 8))
-
-# Count increases and decreases
-increased = (dual_role_df['la_rate'] > dual_role_df['fa_rate']).sum()
-decreased = (dual_role_df['la_rate'] < dual_role_df['fa_rate']).sum()
-unchanged = (dual_role_df['la_rate'] == dual_role_df['fa_rate']).sum()
-
-# Plot lines connecting each author's rates
-for _, row in dual_role_df.iterrows():
-    ax.plot([1, 2], [row['fa_rate'], row['la_rate']], 
-            color='gray', alpha=0.6, linewidth=1)
-
-# Add average lines
-fa_mean = dual_role_df['fa_rate'].mean()
-la_mean = dual_role_df['la_rate'].mean()
-ax.plot([1, 2], [fa_mean, la_mean], 
-        color='red', linewidth=3, label=f'Average')
-
-# Formatting
-ax.set_xlim(0.8, 2.2)
-ax.set_ylim(0, max(dual_role_df[['fa_rate', 'la_rate']].max().max() * 1.1, fa_mean + 10, la_mean + 10))
-ax.set_xticks([1, 2])
-ax.set_xticklabels(['First Author', 'Leading Author'], fontsize=14)
-ax.set_ylabel('% Claims Challenged', fontsize=12)
-ax.set_title('Challenge Rates: Authors in Both First and Leading Author Roles', 
-            fontsize=14, pad=20)
-
-# Add percentage labels on left and right
-ax.text(0.85, fa_mean, f'{fa_mean:.1f}%', ha='right', va='center', fontweight='bold', color='red', fontsize=12)
-ax.text(2.15, la_mean, f'{la_mean:.1f}%', ha='left', va='center', fontweight='bold', color='red', fontsize=12)
-
-# Despine - remove all spines except bottom
+ax.set_xticks([0, 1])
+ax.set_xticklabels(['First author', 'Last author'])
+ax.set_ylabel('Proportion of challenged claims')
+ax.set_title('Irreproducibility of authors who became PIs')
+ax.set_xlim(-0.3, 1.3)
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-ax.spines['left'].set_visible(False)
-ax.tick_params(left=False)  # Remove left ticks
-ax.grid(True, alpha=0.3, axis='y')
-
+ax.spines['bottom'].set_visible(False)
+ax.legend()
 plt.tight_layout()
-plt.savefig('figM3_slopegraph_dual_role_authors.png', dpi=300, bbox_inches='tight')
 plt.show()
 
-# Save the data
-dual_role_df.to_csv('tableM3_dual_role_authors.csv', index=False)
-    
-# Summary statistics
-print(f"\nSummary:")
-print(f"Average challenge rate as First Author: {fa_mean:.1f}%")
-print(f"Average challenge rate as Leading Author: {la_mean:.1f}%")
-print(f"Difference (LA - FA): {la_mean - fa_mean:.1f} percentage points")
-print(f"\nAuthor-level changes:")
-print(f"  {increased} authors ({increased/len(dual_role_df)*100:.1f}%) had higher challenge rates as Leading Author")
-print(f"  {decreased} authors ({decreased/len(dual_role_df)*100:.1f}%) had lower challenge rates as Leading Author")
-if unchanged > 0:
-    print(f"  {unchanged} authors ({unchanged/len(dual_role_df)*100:.1f}%) had the same challenge rate in both roles")
+# %%
+import bambi as bmb
+import arviz as az
+import numpy as np
+import pandas as pd
 
+# ──────────────────────────────────────────────────────────────
+# 1.  Minimal dataset: outcome + two categorical predictors
+# ──────────────────────────────────────────────────────────────
+df      = all_covar.copy()
+df      = df[['assessment_type_grouped',
+             'journal_category',          # Low / High / Trophy
+             'ranking_category',          # Not Ranked / 101+ / 51-100 / Top 50
+             'leading_author_key']]       # cluster id
 
+# outcome 0-1
+df['challenged_flag'] = (df['assessment_type_grouped'] == 'Challenged').astype(int)
+df = df.dropna(subset=['challenged_flag', 'journal_category', 'ranking_category'])
+
+# ──────────────────────────────────────────────────────────────
+# 2.  Bambi model: challenged ~ journal + ranking (+ interaction)
+# ──────────────────────────────────────────────────────────────
+formula = (
+    "challenged_flag ~ "
+    "C(journal_category,  Treatment('Low Impact')) + "
+    "C(ranking_category, Treatment('Not Ranked'))     + "
+    "(1 | leading_author_key)"                           )  # random intercept for lab
+
+# centre intercept on observed challenge rate
+pi  = df.challenged_flag.mean()
+pri = {"Intercept": bmb.Prior("Normal", mu=np.log(pi/(1-pi)), sigma=1.5)}
+
+model  = bmb.Model(formula, df, family="bernoulli", dropna=True)
+model.set_priors(pri)
+
+idata  = model.fit(draws=2000, tune=1000, chains=4, cores=4,
+                   random_seed=123, target_accept=0.9)
+
+# ──────────────────────────────────────────────────────────────
+# 3.  Print odds-ratios (no CSV, no plots)
+# ──────────────────────────────────────────────────────────────
+fixed_vars = [var for var in idata.posterior.data_vars if not ('_sigma' in var or '_offset' in var or '1|' in var)]
+table = az.summary(idata, var_names=fixed_vars, kind='stats')
+table['OR']      = np.exp(table['mean'])
+table['OR_low']  = np.exp(table['hdi_3%'])
+table['OR_high'] = np.exp(table['hdi_97%'])
+
+print("\nOdds-ratios adjusted for journal tier and university rank:")
+print(table[['OR','OR_low','OR_high']].round(2))
+
+table = stat_lib.format_results_table(table, clean_variable_names=True)
+print(table[['OR', 'OR_low', 'OR_high']])

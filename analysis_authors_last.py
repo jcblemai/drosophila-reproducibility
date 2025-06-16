@@ -1026,4 +1026,3 @@ for decade in decade_summary.index:
         print(f"{decade}: {authors} authors, {challenged}/{total} challenged ({prop:.1%})")
 
 # %%
-
