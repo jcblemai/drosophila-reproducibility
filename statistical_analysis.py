@@ -70,6 +70,7 @@ leading_author_claims = leading_author_claims[[
                                             'article_id',
                                             # ~~~ outcome variables
                                             'assessment_type_grouped',
+                                            'assessment_type',
                                             ]]
 
 leading_author_claims["first_paper_before_1995"] = leading_author_claims["first_lh_or_fh_paper_year"] < 1995
@@ -126,7 +127,7 @@ author_df = all_covar_temp.groupby('first_author_key').agg({
     'ranking_score': 'max',  # Highest ranking institution
     'phd_postdoc_score': 'max',  # Highest level (Post-doc > PhD)
     'challenged_flag': 'max',  # True if any claim was challenged (max of 0/1 gives 1 if any are 1)
-    'article_id': 'count'  # Count number of papers for that author as first author
+    'article_id': 'nunique'  # Count number of papers for that author as first author
 }).reset_index()
 
 # Rename the count column and add log transformation
@@ -247,21 +248,37 @@ print("\n=== MODEL SUMMARY ===")
 print(f"Total authors analyzed: {len(author_df)}")
 print(f"Authors who became PIs: {author_df['become_pi_binary'].sum()} ({pi_observed_mean:.1%})")
 
+
 # %%
 # ── MODEL1: ALL CLAIM PREDICTOR ────────────────────
 df = all_covar.copy()
+#
+df["F_and_L"] = df["F_and_L"].fillna("Origininal F and L")
+df["Historical_lab_after_1998"] = df["Historical_lab_after_1998"].fillna("Original Historical")
+# convert to strings
+df["F_and_L"] = df["F_and_L"].astype(str)
+df["Historical_lab_after_1998"] = df["Historical_lab_after_1998"].astype(str)
 # --- Spline for year (3 knots to cut collinearity) ---
 year_splines = patsy.bs(df['year'], df=3, include_intercept=False)
 # patsy.bs returns a design‐matrix; we add columns directly:
 df[['year_s1','year_s2','year_s3']] = pd.DataFrame(year_splines, index=df.index)
-
+ 
 df['challenged_flag'] = df['assessment_type_grouped'].eq('Challenged').astype(int) 
-
+#df['challenged_flag'] = df['assessment_type'].eq('Unchallenged, logically inconsistent').astype(int) 
+#df['challenged_flag'] = df['assessment_type'].eq('Unchallenged').astype(int) 
+#df['challenged_flag'] = df['assessment_type_grouped'].eq('Mixed').astype(int) 
+#df['challenged_flag'] = df['assessment_type_grouped'].eq('Partially Verified').astype(int) 
+#df['challenged_flag'] = df['assessment_type_grouped'].eq('Unchallenged').astype(int) 
 # Bambi syntax – common (fixed) effects + group-specific intercepts
+# This figure lacks being trained in traditional lab 
+# and having done a paper as first author in an immunity lab and 
+# may be having starting the lab after 1995?
 formula = (
     "challenged_flag ~ "
     "C(journal_category, Treatment('Low Impact')) + "
     "year_s1 + year_s2 + year_s3 + "
+    "C(F_and_L, Treatment('False')) + "
+    "C(Historical_lab_after_1998, Treatment('False')) + "
     "C(ranking_category, Treatment('Not Ranked')) + "
     "C(First_Author_Sex, Treatment('Male')) + C(PhD_Postdoc, Treatment('PhD')) + "
     "C(Leading_Author_Sex, Treatment('Male')) + C(Junior_Senior, Treatment('Senior PI')) + "
@@ -272,7 +289,7 @@ formula = (
 tight_prior = bmb.Prior("Normal", mu=0, sigma=1)
 
 # Calculate informative intercept prior based on observed challenge rate
-pi = df.challenged_flag.mean()
+pi =  .5#df.challenged_flag.mean()
 priors = { 
     "year_s1": tight_prior, 
     "year_s2": tight_prior, 
@@ -327,7 +344,7 @@ coef['OR_high'] = np.exp(coef['hdi_97%'])
 
 # Categorize effects
 first_author_effects = coef[coef.index.str.contains('First_Author_Sex|PhD_Postdoc')]
-leading_author_effects = coef[coef.index.str.contains('Leading_Author_Sex|Junior_Senior|Continuity|first_paper_before_1995')]
+leading_author_effects = coef[coef.index.str.contains('Leading_Author_Sex|Junior_Senior|Continuity|first_paper_before_1995|F_and_L|Historical_lab_after_1998')]
 paper_effects = coef[coef.index.str.contains('journal_category|ranking_category|year_s')]
 intercept_effect = coef[coef.index.str.contains('Intercept')]
 

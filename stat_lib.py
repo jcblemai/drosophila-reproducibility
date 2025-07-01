@@ -722,9 +722,15 @@ def format_results_table(df, or_columns=['OR', 'OR_low', 'OR_high'], other_colum
         var_info = parse_model_variables(df_formatted.index.tolist())
         # For tables, concatenate category and clean name
         table_names = []
-        for i, clean_name in enumerate(var_info['clean_names']):
-            category = var_info['categories'][i]
-            table_names.append(f"{category}: {clean_name}")
+        var_idx = 0
+        for orig_name in df_formatted.index.tolist():
+            if 'Intercept' in orig_name:
+                table_names.append('Intercept')
+            else:
+                clean_name = var_info['clean_names'][var_idx]
+                category = var_info['categories'][var_idx]
+                table_names.append(f"{category}: {clean_name}")
+                var_idx += 1
         df_formatted.index = table_names
     
     # Format OR columns to 2 decimal places
