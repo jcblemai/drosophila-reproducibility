@@ -295,6 +295,7 @@ min_claims = 6
 to_plot = to_plot[to_plot['Articles'] >= min_articles]
 to_plot = to_plot[to_plot['Major claims'] >= min_claims]
 fig1, ax1 = plot_info.create_challenged_vs_unchallenged_scatter(to_plot, name_col="Leading Author Name")
+print("This version of fig 9B is not the final one.")
 plt.savefig('figures/fig9B.png', dpi=300, bbox_inches='tight')
 
 # %%
@@ -657,14 +658,14 @@ if ax7B.get_legend():
 
 # ── Panel C – scatter (full right) ────────────────────────────────────
 scatter_df = author_metrics.copy()
-scatter_df = scatter_df[(scatter_df["Articles"] >= 2) & (scatter_df["Major claims"] >= 6)]
+#scatter_df = scatter_df[(scatter_df["Articles"] >= 2) & (scatter_df["Major claims"] >= 6)]
 
 plot_info.create_challenged_vs_articles_scatter(
     scatter_df,
     annotate_top_n=8,
     title="",
     size_mult=100,
-    name_col="Leading Author Name",
+    #name_col="Leading Author Name",
     ax=ax7C,
 )
 ax7C.set_title("C", loc="left", fontweight="bold", fontsize=24)
@@ -866,8 +867,8 @@ varA_fig9_data = leading_author_claims  # No special filtering for Continuity
 grpA_fig9, label_mapA_fig9 = _make_group_fig8(varA_fig9, all_categorical_variables[varA_fig9]["labels"], varA_fig9_data)
 
 # Use the same scatter data as other figures (filtered)
-scatter_df_fig9 = author_metrics.copy()
-scatter_df_fig9 = scatter_df_fig9[(scatter_df_fig9["Articles"] >= 2) & (scatter_df_fig9["Major claims"] >= 6)]
+scatter_df_fig9 = pd.merge(first_papers_year, author_metrics, left_index=True, right_on='leading_author_key', how='right').copy()
+scatter_df_fig9 = scatter_df_fig9[(scatter_df_fig9["first_lh_or_fh_paper_year"] >= 1995)]
 
 # Layout: 2 rows × 2 cols – legend above stackplot, scatter takes full right side
 fig9 = plt.figure(figsize=(15, 8))

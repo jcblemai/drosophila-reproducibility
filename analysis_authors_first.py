@@ -405,7 +405,7 @@ plot_info.create_challenged_vs_articles_scatter(
     annotate_top_n=0,
     title="",
     size_mult=100,
-    name_col='First Author Name',
+    #name_col='First Author Name',
     ax=axC
 )
 axC.set_title("C", loc="left", fontweight="bold", fontsize=24, x=-0.1, y=1.05)

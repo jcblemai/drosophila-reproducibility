@@ -1536,7 +1536,7 @@ def create_publication_scatter(
     x_var, 
     y_var, 
     group_by=None,
-    min_articles=1,
+    min_articles=0,
     size_var=None, 
     log_scale=False,
     x_percent=False,
@@ -1791,10 +1791,16 @@ def create_challenged_vs_unchallenged_scatter(
         fig, ax = plt.subplots(figsize=fig_size)
     else:
         fig = ax.figure
-    
+
+    print("Warning: this function plot the proportion of unchallenged in claims that are not challenged" \
+        " and not the proportion of unchallenged claims in major claims. ")
+    plot_df["Unchallenged_corrected"] = plot_df['Unchallenged'] / (plot_df['Major claims'] - plot_df['Challenged'])
+    # Ensure no division by zero
+    plot_df['Unchallenged_corrected'] = plot_df['Unchallenged_corrected'].replace([np.inf, -np.inf, np.nan], 0)
+
     # Scatter plot for challenged vs unchallenged
     scatter = ax.scatter(
-        plot_df['Unchallenged prop'], 
+        plot_df['Unchallenged_corrected'],
         plot_df['Challenged prop'],
         s=plot_df['Articles']*size_mult,  # Size by number of articles
         c=plot_df['Verified']/plot_df['Major claims'],  # Color by verification rate
@@ -1820,11 +1826,11 @@ def create_challenged_vs_unchallenged_scatter(
     
     # Calculate regression line
     slope, intercept, r_value, p_value, std_err = stats.linregress(
-        plot_df['Unchallenged prop'], plot_df['Challenged prop']
+        plot_df['Unchallenged_corrected'], plot_df['Challenged prop']
     )
     
     # Plot regression line
-    x_line = np.linspace(0, plot_df['Unchallenged prop'].max()*1.1, 100)
+    x_line = np.linspace(0, plot_df['Unchallenged_corrected'].max()*1.1, 100)
     y_line = intercept + slope * x_line
     ax.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
 
@@ -1837,7 +1843,7 @@ def create_challenged_vs_unchallenged_scatter(
             bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.5'))
     
     # Customize plot
-    ax.set_xlabel('Proportion of Unchallenged Claims', fontweight='bold')
+    ax.set_xlabel('Proportion of Unchallenged Claims in Claims not "Challenged"', fontweight='bold')
     ax.set_ylabel('Proportion of Challenged Claims', fontweight='bold')
     #ax.set_title(title, fontweight='bold')
     ax.grid(linestyle='--', alpha=0.3)
@@ -1880,7 +1886,7 @@ def create_challenged_vs_articles_scatter(
     title="Proportion of Challenged Claims vs. Number of Articles",
     fig_size=(10, 8),
     size_mult=40,
-    name_col='Name',
+    name_col=None,
     ax=None
 ):
     """
@@ -1923,16 +1929,17 @@ def create_challenged_vs_articles_scatter(
     # Annotate top authors by percentage challenged
     top_pct_authors = plot_df.sort_values(by='Challenged prop', ascending=False).head(annotate_top_n)
     
-    for _, row in top_pct_authors.iterrows():
-        ax.annotate(
-            row[name_col], 
-            xy=(row['Articles'], row['Challenged prop']),
-            xytext=(5, 5),
-            textcoords='offset points',
-            fontsize=10,
-            fontweight='bold',
-            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8)
-        )
+    if name_col is not None:
+        for _, row in top_pct_authors.iterrows():
+            ax.annotate(
+                row[name_col], 
+                xy=(row['Articles'], row['Challenged prop']),
+                xytext=(5, 5),
+                textcoords='offset points',
+                fontsize=10,
+                fontweight='bold',
+                bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="gray", alpha=0.8)
+            )
     
     # Calculate regression line
     slope, intercept, r_value, p_value, std_err = stats.linregress(

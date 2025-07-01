@@ -219,7 +219,7 @@ def create_simple_horizontal_country_chart(
     df,
     country_col='country',
     var_to_plot='Challenged_prop',
-    min_claims=5,
+    min_claims=0,
     sort_by_value=True,
     title=None,
     x_label=None,
