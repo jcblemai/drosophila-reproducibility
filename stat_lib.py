@@ -162,11 +162,30 @@ def parse_model_variables(variable_names, formula=None):
                 category_mapping[category_name] = []
             category_mapping[category_name].append(var_name)
     
+    # Create mapping from original variable names to clean info
+    var_name_mapping = {}
+    clean_idx = 0
+    for var_name in variable_names:
+        if 'Intercept' in var_name:
+            var_name_mapping[var_name] = {
+                'clean_name': 'Intercept',
+                'category': 'Model',
+                'is_categorical': False
+            }
+        else:
+            var_name_mapping[var_name] = {
+                'clean_name': clean_names[clean_idx],
+                'category': categories[clean_idx],
+                'is_categorical': is_categorical[clean_idx]
+            }
+            clean_idx += 1
+    
     return {
         'clean_names': clean_names,
         'categories': categories, 
         'category_mapping': category_mapping,
-        'is_categorical': is_categorical
+        'is_categorical': is_categorical,
+        'var_name_mapping': var_name_mapping  # NEW: direct mapping
     }
 
 # ============================================================================
@@ -441,7 +460,8 @@ def create_forest_plot(data, title="", color='black'):
         return None, None
     
     # Use variable parsing to organize by categories
-    var_info = parse_model_variables(data.index.tolist())
+    original_var_list = data.index.tolist()
+    var_info = parse_model_variables(original_var_list)
     
     # Build plot items with category headers (reversed order for proper display)
     plot_items = []
@@ -453,8 +473,7 @@ def create_forest_plot(data, title="", color='black'):
         var_items = []
         for var_name in var_names:
             if var_name in data.index:
-                var_idx = data.index.tolist().index(var_name)
-                clean_name = var_info['clean_names'][var_idx]
+                clean_name = var_info['var_name_mapping'][var_name]['clean_name']
                 indented_name = clean_name  # No text indentation, handled by positioning
                 var_items.append((indented_name, data.loc[var_name], False))
         
@@ -567,8 +586,10 @@ def create_random_effects_forest_plot(random_effects_summary, title, color='navy
     
     # Use cleaned labels from parse_model_variables
     y_positions = range(len(combined_effects))
-    var_info = parse_model_variables(combined_effects.index.tolist())
-    labels = var_info['clean_names']
+    original_var_list = combined_effects.index.tolist()
+    var_info = parse_model_variables(original_var_list)
+    # Create labels using direct mapping
+    labels = [var_info['var_name_mapping'][name]['clean_name'] for name in original_var_list]
     
     # Plot error bars and points 
     for i, (_, row) in enumerate(combined_effects.iterrows()):
@@ -621,14 +642,18 @@ def create_elegant_forest_plot(data, title="", figsize=(15, 8), **kwargs):
     matplotlib axes object
     """
     # Use bulletproof parsing for variable labels and groups
-    var_info = parse_model_variables(data.index.tolist())
+    original_var_list = data.index.tolist()
+    var_info = parse_model_variables(original_var_list)
     
     # Prepare data for forestplot package
     plot_data = data.copy()
     
+    # Create proper labels and groups using direct mapping
+    labels = [var_info['var_name_mapping'][name]['clean_name'] for name in original_var_list]
+    groups = [var_info['var_name_mapping'][name]['category'] for name in original_var_list]
     
-    plot_data['varlabel'] = var_info['clean_names']
-    plot_data['group'] = var_info['categories']
+    plot_data['varlabel'] = labels
+    plot_data['group'] = groups
     
 
     # Add formatted confidence intervals
@@ -719,18 +744,18 @@ def format_results_table(df, or_columns=['OR', 'OR_low', 'OR_high'], other_colum
     
     # Clean variable names in index if requested
     if clean_variable_names and hasattr(df_formatted.index, 'tolist'):
-        var_info = parse_model_variables(df_formatted.index.tolist())
+        original_var_list = df_formatted.index.tolist()
+        var_info = parse_model_variables(original_var_list)
         # For tables, concatenate category and clean name
         table_names = []
-        var_idx = 0
-        for orig_name in df_formatted.index.tolist():
+        for orig_name in original_var_list:
+            var_mapping = var_info['var_name_mapping'][orig_name]
+            clean_name = var_mapping['clean_name']
+            category = var_mapping['category']
             if 'Intercept' in orig_name:
-                table_names.append('Intercept')
+                table_names.append(clean_name)
             else:
-                clean_name = var_info['clean_names'][var_idx]
-                category = var_info['categories'][var_idx]
                 table_names.append(f"{category}: {clean_name}")
-                var_idx += 1
         df_formatted.index = table_names
     
     # Format OR columns to 2 decimal places

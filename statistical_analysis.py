@@ -66,7 +66,8 @@ leading_author_claims = leading_author_claims[[
                                             'year', 
                                             'year_binned',
                                             'journal_category',
-                                            'ranking_category', 
+                                            'ranking_category',
+                                            'country',
                                             'article_id',
                                             # ~~~ outcome variables
                                             'assessment_type_grouped',
@@ -263,10 +264,11 @@ year_splines = patsy.bs(df['year'], df=3, include_intercept=False)
 # patsy.bs returns a design‐matrix; we add columns directly:
 df[['year_s1','year_s2','year_s3']] = pd.DataFrame(year_splines, index=df.index)
  
-df['challenged_flag'] = df['assessment_type_grouped'].eq('Challenged').astype(int) 
+#df['challenged_flag'] = df['assessment_type_grouped'].eq('Challenged').astype(int) 
 #df['challenged_flag'] = df['assessment_type'].eq('Unchallenged, logically inconsistent').astype(int) 
 #df['challenged_flag'] = df['assessment_type'].eq('Unchallenged').astype(int) 
-#df['challenged_flag'] = df['assessment_type_grouped'].eq('Mixed').astype(int) 
+#df['challenged_flag'] = df['assessment_type_grouped'].eq('Mixed').astype(int)
+#df['challenged_flag'] = df['assessment_type_grouped'].eq('Verified').astype(int) 
 #df['challenged_flag'] = df['assessment_type_grouped'].eq('Partially Verified').astype(int) 
 #df['challenged_flag'] = df['assessment_type_grouped'].eq('Unchallenged').astype(int) 
 # Bambi syntax – common (fixed) effects + group-specific intercepts
@@ -278,7 +280,7 @@ formula = (
     "C(journal_category, Treatment('Low Impact')) + "
     "year_s1 + year_s2 + year_s3 + "
     "C(F_and_L, Treatment('False')) + "
-    "C(Historical_lab_after_1998, Treatment('False')) + "
+#    "C(Historical_lab_after_1998, Treatment('False')) + "
     "C(ranking_category, Treatment('Not Ranked')) + "
     "C(First_Author_Sex, Treatment('Male')) + C(PhD_Postdoc, Treatment('PhD')) + "
     "C(Leading_Author_Sex, Treatment('Male')) + C(Junior_Senior, Treatment('Senior PI')) + "
@@ -468,6 +470,7 @@ import pandas as pd
 # 1.  Minimal dataset: outcome + two categorical predictors
 # ──────────────────────────────────────────────────────────────
 df      = all_covar.copy()
+#df = df[df["country"] == "USA"]
 df      = df[['assessment_type_grouped',
              'journal_category',          # Low / High / Trophy
              'ranking_category',          # Not Ranked / 101+ / 51-100 / Top 50
@@ -483,7 +486,7 @@ df = df.dropna(subset=['challenged_flag', 'journal_category', 'ranking_category'
 formula = (
     "challenged_flag ~ "
     "C(journal_category,  Treatment('Low Impact')) + "
-    "C(ranking_category, Treatment('Not Ranked'))     + "
+    "C(ranking_category, Treatment('Not Ranked'))  + "
     "(1 | leading_author_key)"                           )  # random intercept for lab
 
 # centre intercept on observed challenge rate
@@ -508,5 +511,7 @@ table['OR_high'] = np.exp(table['hdi_97%'])
 print("\nOdds-ratios adjusted for journal tier and university rank:")
 print(table[['OR','OR_low','OR_high']].round(2))
 
-table = stat_lib.format_results_table(table, clean_variable_names=True)
-print(table[['OR', 'OR_low', 'OR_high']])
+table_formated = stat_lib.format_results_table(table, clean_variable_names=True)
+print(table_formated[['OR', 'OR_low', 'OR_high']])
+# make forest plot
+fig, ax = stat_lib.create_forest_plot(table)

@@ -645,7 +645,6 @@ to_plot
 
 # %%
 
-
 # %%
 # Create a copy to avoid modifying the original
 ranking_df = major_claims_df.copy()
