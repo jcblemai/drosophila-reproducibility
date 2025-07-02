@@ -21,9 +21,9 @@ MEDIUM_SIZE = 20
 BIGGER_SIZE = 22
 
 # Standardized figure sizes for consistency
-HORIZONTAL_LAYOUT = (15, 8)    # For side-by-side panels (AB)
-COMPLEX_LAYOUT = (15, 10)      # For multi-panel figures (ABC)
-VERTICAL_LAYOUT = (10, 12)     # For stacked panels
+HORIZONTAL_LAYOUT = (20, 8)    # For side-by-side panels (AB)
+COMPLEX_LAYOUT = (15, 17)      # For multi-panel figures (ABC)
+VERTICAL_LAYOUT = (9,14)     # For stacked panels
 SINGLE_PANEL = (10, 8)         # For individual plots
 
 # Panel label font size (for A, B, C labels)
@@ -1286,7 +1286,8 @@ def plot_author_irreproducibility_focused(
     most_challenged_on_right=True,
     name_col='Name',
     annotate_top_n=5,
-    ax=None
+    ax=None,
+    show_stats_text=True,
 ):
     """
     Create a more focused Figure 4A showing the distribution of irreproducibility.
@@ -1331,6 +1332,15 @@ def plot_author_irreproducibility_focused(
         sizes = [5, 10, 20, 50]
         scatter_size = 15
     
+    # Add a line connecting the points
+    ax.plot(
+        sorted_df['Rank'],
+        sorted_df['Challenged prop'],
+        color='black',
+        alpha=1,
+        linestyle='-',
+        linewidth=1
+    )
     
     # Plot the distribution
     scatter = ax.scatter(
@@ -1339,24 +1349,21 @@ def plot_author_irreproducibility_focused(
         s=sorted_df['Major claims'] * scatter_size,  # Size by total claims
         c=sorted_df[color_by],  # Color by specified column
         cmap=cmap,
-        alpha=0.8,
+        alpha=0.9,
         edgecolors='white',
-        linewidth=0.5
-    )
-    
-    # Add a line connecting the points
-    ax.plot(
-        sorted_df['Rank'],
-        sorted_df['Challenged prop'],
-        color='gray',
-        alpha=0.5,
-        linestyle='-',
-        linewidth=1
+        linewidth=0
     )
     
     # Add color bar
-    cbar = plt.colorbar(scatter, ax=ax, shrink=0.6, pad=-0.12)
-    cbar.set_label(f'{color_by}', fontweight='bold')
+    if most_challenged_on_right:
+        cbar = plt.colorbar(scatter, ax=ax, shrink=0.6, pad=-0.12)
+    else:
+        # Place colorbar on the left, inside the plot area
+        cbar = plt.colorbar(
+            scatter, ax=ax, shrink=0.6, pad=0.02, location='left',
+            anchor=(3.5, 0.8), aspect=30, fraction=0.1
+        )
+    cbar.set_label(f'{color_by}', fontsize=MEDIUM_SIZE)
     
     for s in sizes:
         ax.scatter([], [], s=s*scatter_size, c='gray', alpha=0.7, edgecolors='white', linewidth=0.5,
@@ -1385,12 +1392,12 @@ def plot_author_irreproducibility_focused(
     # Set labels and title
     x_label = 'Author Rank'
     if most_challenged_on_right:
-        x_label += ' (least to most challenged)'
-    else:
         x_label += ' (most to least challenged)'
+    else:
+        x_label += ' (least to most challenged)'
         
-    ax.set_xlabel(x_label, fontweight='bold')
-    ax.set_ylabel('Proportion of Challenged Claims', fontweight='bold')
+    ax.set_xlabel(x_label, fontsize=MEDIUM_SIZE)
+    ax.set_ylabel('Proportion of Challenged Claims', fontsize=MEDIUM_SIZE)
     ax.set_title(title, fontweight='bold', pad=20)
     
     # Format y-axis as percentage
@@ -1403,16 +1410,24 @@ def plot_author_irreproducibility_focused(
         f"Median: {df['Challenged prop'].median():.1%}\n"
         f"Authors with >20% Challenged: {(df['Challenged prop'] > 0.2).sum()}"
     )
-    
-    ax.text(0.5, 0.98, stats_text, transform=ax.transAxes, ha='center', va='top',
-        fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+    print(stats_text)
+    if show_stats_text:
+        ax.text(0.5, 0.98, stats_text, transform=ax.transAxes, ha='center', va='top',
+            fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
     # Add legend
-    ax.legend(title="Total Claims", loc='upper right', bbox_to_anchor=(0.80, 0.65))
+    ax.legend(
+        title="Total Claims",
+        loc='upper right',
+        bbox_to_anchor=(0.65, 0.95),
+        fontsize=MEDIUM_SIZE,
+        title_fontsize=MEDIUM_SIZE,
+        frameon=True,
+    )
     
     # Set y-axis to start at 0
-    ax.set_ylim(0, None)
-    ax.set_xlim(1, None)
+    #ax.set_ylim(0, None)
+    #ax.set_xlim(1, None)
     
     # Add grid
     ax.grid(axis='y', linestyle='--', alpha=0.3)
@@ -1588,8 +1603,8 @@ def plot_lorenz_curve(
     
     # Add Gini coefficient as text
     if print_gini:
-        ax.text(0.05, 0.75, f"Gini Coefficient: {gini:.3f}", transform=ax.transAxes, ha='left',
-            fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
+        ax.text(0.05, 0.9, f"Gini Coefficient: {gini:.3f}", transform=ax.transAxes, ha='left',
+            fontsize=MEDIUM_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
     # Add cumulative contribution lines
     n = len(df)
@@ -1613,14 +1628,15 @@ def plot_lorenz_curve(
                 color='black', zorder=3, s=40)
         ax.annotate(f"{pct:.0%}", 
                 (df['lorenz_cum_authors'].iloc[idx], df['lorenz_cum_challenged'].iloc[idx]),
-                xytext=(5, 5), textcoords='offset points', fontsize=12)
+                xytext=(5, 5), textcoords='offset points', fontsize=MEDIUM_SIZE)
     if print_top_txt:
         ax.text(0.05, 0.98, stats_text, transform=ax.transAxes, ha='left', va='top',
             fontsize=SMALL_SIZE, bbox=dict(facecolor='white', alpha=0.8, boxstyle='round,pad=0.5'))
     
+    
     # Format axes
-    ax.set_xlabel('Cumulative Proportion of Authors', fontweight='bold')
-    ax.set_ylabel('Cumulative Proportion of Challenged Claims', fontweight='bold')
+    ax.set_xlabel('Cumulative % of Authors', fontsize=MEDIUM_SIZE)#, fontweight='bold')
+    ax.set_ylabel('Cumulative % of Challenged Claims', fontsize=MEDIUM_SIZE)#, fontweight='bold')
     ax.set_title(title, fontweight='bold', pad=20)
     
     # Format as percentages
@@ -1634,7 +1650,7 @@ def plot_lorenz_curve(
     # Remove top and right spines
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    
+
     plt.tight_layout()
     
     return fig, ax
@@ -2031,11 +2047,11 @@ def create_challenged_vs_articles_scatter(
         plot_df['Articles'], 
         plot_df['Challenged prop'],
         s=plot_df['Major claims']*size_mult,  # Size by number of claims
-        c=plot_df['Verified']/plot_df['Major claims'],  # Color by verification rate
+        c=plot_df['Verified']/plot_df['Major claims']*100,  # Color by verification rate
         cmap='RdYlGn',
         alpha=0.7,
         edgecolors='white',
-        linewidth=0.5
+        linewidth=0.5,
     )
     
     # Annotate top authors by percentage challenged
@@ -2061,18 +2077,18 @@ def create_challenged_vs_articles_scatter(
     # Plot regression line
     x_line = np.linspace(0, plot_df['Articles'].max()*1.1, 100)
     y_line = intercept + slope * x_line
-    ax.plot(x_line, y_line, color='#e74c3c', linestyle='--', alpha=0.8, linewidth=2)
+    ax.plot(x_line, y_line, color='#e74c3c', linestyle='-', alpha=1, linewidth=3)
     
     # Add regression statistics
     stats_text = f"$r^2$ = {r_value**2:.3f}\n"
     stats_text += f"p = {p_value:.3e}" if p_value < 0.001 else f"p = {p_value:.3f}"
     ax.text(0.05, 0.95, stats_text, transform=ax.transAxes, 
-            va='top', ha='left', fontsize=12, 
+            va='top', ha='left', fontsize=MEDIUM_SIZE, 
             bbox=dict(facecolor='white', alpha=0.7, edgecolor='none', boxstyle='round,pad=0.5'))
     
     # Customize plot
-    ax.set_xlabel('Number of Articles', fontweight='bold')
-    ax.set_ylabel('Proportion of Challenged Claims', fontweight='bold')
+    ax.set_xlabel('Number of Articles', fontsize=MEDIUM_SIZE)
+    ax.set_ylabel('% Challenged Claims', fontsize=MEDIUM_SIZE)
     #ax.set_title(title, fontweight='bold')
     ax.yaxis.set_major_formatter(PercentFormatter(1.0))
     ax.grid(linestyle='--', alpha=0.3)
@@ -2091,7 +2107,7 @@ def create_challenged_vs_articles_scatter(
     #cbar.set_label('Proportion of Verified Claims', fontweight='bold')
 
     cbar = plt.colorbar(scatter, ax=ax, shrink=0.6, pad=0)
-    cbar.set_label(f'Proportion of Verified Claims', fontweight='bold')
+    cbar.set_label(f'% Verified', fontsize=MEDIUM_SIZE)
     
     # Add size legend
     handles, labels = [], []
@@ -2110,9 +2126,11 @@ def create_challenged_vs_articles_scatter(
         framealpha=0.9,
         edgecolor='lightgray',
         handletextpad=2,
-        labelspacing=1
+        labelspacing=1,
+        fontsize=MEDIUM_SIZE,
+        frameon=True,
     )
-    legend.get_title().set_fontweight('bold')
+    legend.get_title().set_fontsize(MEDIUM_SIZE)
     
     plt.tight_layout()
     

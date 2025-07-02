@@ -265,6 +265,7 @@ fig, ax = plot_info.create_publication_scatter(
 # ### Figure 4 – Gini (A) and Distribution (B) side-by-side
 
 # %%
+importlib.reload(plot_info)
 import matplotlib.gridspec as gridspec
 from plot_info import MEDIUM_SIZE
 
@@ -273,10 +274,10 @@ to_plot = author_metrics.copy()
 # to_plot = to_plot[to_plot['Major claims'] >= 6]
 
 fig4 = plt.figure(figsize=plot_info.HORIZONTAL_LAYOUT)
-gs4  = gridspec.GridSpec(1, 2, width_ratios=[1, 1], wspace=0.15)
+gs4  = gridspec.GridSpec(1, 2, width_ratios=[1, 1], wspace=0.05)
 
 ax4A = fig4.add_subplot(gs4[0])   # A – Lorenz / Gini
-ax4B = fig4.add_subplot(gs4[1])   # B – scatter
+ax4B = fig4.add_subplot(gs4[1], sharey=ax4A)   # B – scatter
 
 # Panel A: Lorenz curve + Gini
 importlib.reload(plot_info)
@@ -292,17 +293,20 @@ plot_info.plot_lorenz_curve(
 ax4A.set_title("A", loc='left', fontweight='bold', fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # Panel B: distribution scatter
-importlib.reload(plot_info)
+to_plot["% Verified"] = to_plot["Verified prop"] * 100
 plot_info.plot_author_irreproducibility_focused(
     to_plot,
     title="",
-    color_by='Verified prop',
+    color_by="% Verified",
     cmap='RdYlGn',
-    most_challenged_on_right=True,
+    most_challenged_on_right=False,
     annotate_top_n=0,
     name_col='First Author Name',
-    ax=ax4B
+    ax=ax4B,
+    show_stats_text=False,
 )
+# removr duplicate axB x axis label and ticks
+ax4B.set_ylabel("")
 ax4B.set_title("B", loc='left', fontweight='bold', fontsize=plot_info.PANEL_LABEL_SIZE)
 
 fig4.tight_layout()
@@ -310,6 +314,10 @@ fig4.savefig("figures/fig4_AB_first_author_horizontal.png",
              dpi=300, bbox_inches="tight")
 print("Saved → figures/fig4_AB_first_author_horizontal.png")
 
+
+# %%
+
+# %%
 
 # %%
 # %% [markdown]
@@ -328,11 +336,11 @@ import matplotlib.gridspec as gridspec
 
 fig5 = plt.figure(figsize=plot_info.COMPLEX_LAYOUT)
 gs5  = gridspec.GridSpec(
-    2, 2,
+    3, 2,
     width_ratios=[0.25, 0.75],
-    height_ratios=[0.5, 0.5],
-    wspace=0.25,
-    hspace=0.5
+    height_ratios=[0.45, 0.1, 0.45],
+    wspace=0.20,
+    hspace=0.15
 )
 
 # Panel‑A axis (top‑left)
@@ -342,7 +350,7 @@ axA = fig5.add_subplot(gs5[0, 0])
 axB = fig5.add_subplot(gs5[0, 1], sharey=axA)
 
 # Panel‑C axis (bottom, spans both columns)
-axC = fig5.add_subplot(gs5[1, :])
+axC = fig5.add_subplot(gs5[2, :])
 
 # ------------------------------------------------------------------
 # Panel A – First Author Sex  (left, width 0.2)
@@ -372,16 +380,11 @@ plot_info.create_horizontal_bar_chart(
 )
 axA.set_title("A", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE, x=-0.2, y=1.05)
 
-# Save legend handles from panel A
-lg = axA.get_legend()
-legend_handles = lg.legend_handles
-legend_labels  = [t.get_text() for t in lg.get_texts()]
-lg.remove()
-
 # ------------------------------------------------------------------
 # Panel B – First Author Career Stage  (middle, width 0.4)
 varB        = "First Author Career Stage"
 label_mapB  = all_categorical_variables[varB]["labels"]
+label_mapB["Senior Staff"] = "Senior \n Staff"
 
 grpB = wrangling.create_author_metric(
     claim_df=first_author_claims,
@@ -404,10 +407,8 @@ plot_info.create_horizontal_bar_chart(
     group_axis_label=varB,
     ax=axB,
 )
+axB.set_ylabel("")
 axB.set_title("B", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE, x=-0.1, y=1.05)
-# Ensure panel B legend is removed
-if axB.get_legend():
-    axB.get_legend().remove()
 
 # ── Panel C : scatter – challenged vs. articles ───────────────────
 
@@ -423,14 +424,12 @@ plot_info.create_challenged_vs_articles_scatter(
 )
 axC.set_title("C", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE, x=-0.1, y=1.05)
 
-# Unified legend in upper-right of panel A
-fig5.axes[1].legend(
-    legend_handles,
-    legend_labels,
-    loc="upper left",
-    frameon=True,
-    ncol=1,
-    fontsize=MEDIUM_SIZE,
+plot_info.create_unified_legend(
+    fig5, 
+    [axA, axB], 
+    title=None,
+    bbox_to_anchor=(0.50, 0.48),  # Position above panel C
+    ncol=len(plot_info.assessment_columns)                        # Two columns as requested
 )
 
 fig5.tight_layout()

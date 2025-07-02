@@ -548,45 +548,36 @@ plot_info.plot_lorenz_curve(
     to_plot_lead,
     prop_column="Challenged prop",
     weight_column="Major claims",
-    #print_top_txt=False,
+    print_top_txt=False,
     title="",
     ax=ax6A,
 )
 ax6A.set_title("A", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # Panel B: distribution scatter
-importlib.reload(plot_info)
+to_plot_lead["% Verified"] = to_plot_lead["Verified prop"] * 100
+
 plot_info.plot_author_irreproducibility_focused(
     to_plot_lead,
     title="",
-    color_by="Verified prop",
+    color_by="% Verified",
     cmap="RdYlGn",
-    most_challenged_on_right=True,
+    most_challenged_on_right=False,
     name_col="Leading Author Name",
     annotate_top_n=0,
     ax=ax6B,
+    show_stats_text=False,
 )
+ax6B.set_ylabel("")
 ax6B.set_title("B", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
-
-# Unify legend (take from panel B)
-lg6 = ax6B.get_legend()
-handles6, labels6 = lg6.legend_handles, [t.get_text() for t in lg6.get_texts()]
-lg6.remove()
-
-ax6A.legend(
-    handles6,
-    labels6,
-    loc="upper right",
-    frameon=True,
-    ncol=1,
-    fontsize=MEDIUM_SIZE,
-)
 
 fig6.tight_layout()
 fig6.savefig("figures/fig6_AB_leading_author_horizontal.png",
              dpi=300,
              bbox_inches="tight")
 print("Saved → figures/fig6_AB_leading_author_horizontal.png")
+
+# %%
 
  # %% [markdown]
 # ### Figure 7 – Leading-author characteristics (A–C)
@@ -617,26 +608,35 @@ def _make_group(var, lbl_map):
 grpA, label_mapA = _make_group(varA, label_mapA)
 grpB, label_mapB = _make_group(varB, label_mapB)
 
-# ----------------------------------------------------------------------
-# Layout: 2 rows × 2 cols – left col 40 %, right col 60 %
-fig7 = plt.figure(figsize=plot_info.COMPLEX_LAYOUT)
-gs7  = gridspec.GridSpec(
-    2, 2,
-    width_ratios=[0.4, 0.6],
-    height_ratios=[0.5, 0.5],
-    wspace=0.35,
-    hspace=0.25
+
+
+fig7 = plt.figure(figsize=(17, 13))
+
+# ── outer grid: 1 row × 2 cols ──────────────────────────
+outer = gridspec.GridSpec(
+    1, 2, width_ratios=[0.30, 0.70], wspace=0.25
 )
 
-ax7A = fig7.add_subplot(gs7[0, 0])                # top-left
-ax7B = fig7.add_subplot(gs7[1, 0], sharex=ax7A)   # bottom-left (share y)
-ax7C = fig7.add_subplot(gs7[:, 1])                # right (span rows)
+# ── left column: 2 rows, equal height, has its own hspace
+left = gridspec.GridSpecFromSubplotSpec(
+    2, 1, subplot_spec=outer[0], height_ratios=[1, 1], hspace=0.35
+)
+
+# ── right column: 2 rows, we'll span them later
+right = gridspec.GridSpecFromSubplotSpec(
+    2, 1, subplot_spec=outer[1], height_ratios=[0.1, 0.9], hspace=0.06
+)
+
+ax7A = fig7.add_subplot(left[0])        # top-left
+ax7B = fig7.add_subplot(left[1])        # bottom-left
+ax7C = fig7.add_subplot(right[1])       # (spans lower 60 % on the right)
 
 # ── Panel A – Sex vertical bar ─────────────────────────────────────────
 importlib.reload(plot_info)
 plot_info.create_horizontal_bar_chart(
     grpA,
     title="",
+    orientation="vertical",
     labels_map=label_mapA,
     show_p_value=False,
     other_n={"authors": "n_authors"},
@@ -646,14 +646,7 @@ plot_info.create_horizontal_bar_chart(
 )
 ax7A.set_title("A", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
-# Capture legend handles from A
-lg7 = ax7A.get_legend()
-handles7 = lg7.legend_handles
-labels7  = [t.get_text() for t in lg7.get_texts()]
-lg7.remove()
-
 # ── Panel B – Junior/Senior vertical bar ──────────────────────────────
-importlib.reload(plot_info)
 plot_info.create_horizontal_bar_chart(
     grpB,
     title="",
@@ -661,14 +654,19 @@ plot_info.create_horizontal_bar_chart(
     show_p_value=False,
     other_n={"authors": "n_authors"},
     pct_axis_label="% of Claims",
-    group_axis_label=varB,
+    group_axis_label="Leading Author Seniority",
+    orientation="vertical",
     ax=ax7B,
 )
 ax7B.set_title("B", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
-# Remove legend from B (if any)
-if ax7B.get_legend():
-    ax7B.get_legend().remove()
 
+plot_info.create_unified_legend(
+    fig7, 
+    [ax7A, ax7B], 
+    title=None,
+    bbox_to_anchor=(0.605, 0.85),  # Position above panel C
+    ncol=3 
+)
 # ── Panel C – scatter (full right) ────────────────────────────────────
 scatter_df = author_metrics.copy()
 #scatter_df = scatter_df[(scatter_df["Articles"] >= 2) & (scatter_df["Major claims"] >= 6)]
@@ -678,21 +676,12 @@ plot_info.create_challenged_vs_articles_scatter(
     scatter_df,
     annotate_top_n=8,
     title="",
-    size_mult=100,
+    size_mult=50,
     #name_col="Leading Author Name",
     ax=ax7C,
 )
 ax7C.set_title("C", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
-# ── Unified legend in upper-right of panel A ──────────────────────────
-ax7A.legend(
-    handles7,
-    labels7,
-    loc="upper right",
-    frameon=True,
-    ncol=1,
-    fontsize=MEDIUM_SIZE,
-)
 
 fig7.tight_layout()
 fig7.savefig("figures/fig7_ABC_leading_author_layout.png",
@@ -741,26 +730,34 @@ grpC, label_mapC = _make_group_fig8(varC, all_categorical_variables[varC]["label
 
 # Layout: 2 rows × 2 cols – left col 40%, right col 60%
 # Reduce height ratios to make space for legend at bottom
-fig8 = plt.figure(figsize=plot_info.COMPLEX_LAYOUT)
-gs8 = gridspec.GridSpec(
-    3, 2,
-    width_ratios=[0.4, 0.6],
-    height_ratios=[0.4, 0.4,0.2],  # Reduced from 0.5 to make space for legend
-    wspace=0.35,
-    hspace=0.2  # Reduced spacing
+fig8 = plt.figure(figsize=(17, 13))
+
+# ── outer grid: 1 row × 2 cols ──────────────────────────
+outer = gridspec.GridSpec(
+    1, 2, width_ratios=[0.70, 0.30], wspace=0.25
 )
 
-ax8A = fig8.add_subplot(gs8[0, 0])                # top-left
-ax8B = fig8.add_subplot(gs8[1, 0], sharex=ax8A)   # bottom-left
-ax8C = fig8.add_subplot(gs8[:, 1])                # right (span rows)
+# ── left column: 2 rows, equal height, has its own hspace
+left = gridspec.GridSpecFromSubplotSpec(
+    2, 1, subplot_spec=outer[0], height_ratios=[0.1, 0.9], hspace=0.06
+)
+
+# ── right column: 2 rows, we'll span them later
+right = gridspec.GridSpecFromSubplotSpec(
+    2, 1, subplot_spec=outer[1], height_ratios=[1, 1], hspace=0.35
+)
+
+ax8A = fig8.add_subplot(left[1])        # top-left
+ax8B = fig8.add_subplot(right[0])        # bottom-left
+ax8C = fig8.add_subplot(right[1])       # (spans lower 60 % on the right)
 
 # Panel A - Year vs reproducibility scatter plot
 # Create scatter plot without size legend first
-scatter = ax8C.scatter(
+scatter = ax8A.scatter(
     to_plot_year['first_lh_or_fh_paper_year'],
     to_plot_year['Challenged prop'],
-    s=to_plot_year['Articles'] * 15,  # Size by Articles
-    c='#3498db',  # Default blue
+    s=to_plot_year['Articles'] * 30,  # Size by Articles
+    c="#4d0aea",  # Default blue
     alpha=0.7,
     edgecolors='white',
     linewidth=0.5
@@ -787,10 +784,10 @@ scatter = ax8C.scatter(
 sizes = [5, 10, 20, 30]
 legend_elements = []
 for size in sizes:
-    legend_elements.append(plt.scatter([], [], s=size*15, color='gray', alpha=0.7, 
+    legend_elements.append(plt.scatter([], [], s=size*30, c="#4d0aea", alpha=0.7, 
                                      edgecolors='white', linewidth=0.5, label=f"{size}"))
 
-legend = ax8C.legend(
+legend = ax8A.legend(
     legend_elements, [f"{size}" for size in sizes],
     title="Number of Articles",
     loc='center left',  # Middle left of the scatter plot
@@ -798,23 +795,25 @@ legend = ax8C.legend(
     framealpha=0.9,
     edgecolor='lightgray',
     handletextpad=2,
-    labelspacing=1
+    labelspacing=1,
+    fontsize=plot_info.MEDIUM_SIZE
 )
-legend.get_title().set_fontweight('bold')
+legend.get_title().set_fontsize(MEDIUM_SIZE)
 
-ax8C.set_ylim(0, 0.7)
-ax8C.vlines(x=1995, ymin=0, ymax=0.7, color='grey', linestyle='--')
-ax8C.set_xlabel("Year of entry in the field", fontweight='bold')
-ax8C.set_ylabel("Proportion of challenged claims", fontweight='bold')
-ax8C.yaxis.set_major_formatter(plot_info.PercentFormatter(1.0))
-ax8C.grid(linestyle='--', alpha=0.3)
-ax8C.set_axisbelow(True)
-ax8C.spines['top'].set_visible(False)
-ax8C.spines['right'].set_visible(False)
+ax8A.set_ylim(None, 1.01)
+ax8A.vlines(x=1995, ymin=ax8A.get_ylim()[0], ymax=ax8A.get_ylim()[1], color='darkorange', linestyle='--', linewidth=2, label="1995")
+ax8A.text(1996, ax8A.get_ylim()[1]*.5, "1995", color='darkorange', fontsize=MEDIUM_SIZE, ha='center', va='top', fontweight='bold', rotation=270)
+ax8A.set_xlabel("Year of entry in the field", fontsize=MEDIUM_SIZE)
+ax8A.set_ylabel("% of challenged claims", fontsize=MEDIUM_SIZE)
+ax8A.yaxis.set_major_formatter(plot_info.PercentFormatter(1.0))
+ax8A.grid(linestyle='--', alpha=0.3)
+ax8A.set_axisbelow(True)
+ax8A.spines['top'].set_visible(False)
+ax8A.spines['right'].set_visible(False)
 
 # Remove the automatic title that the function creates
-ax8C.set_title("", fontsize=1)  # Clear any title
-ax8C.text(0.02, 0.98, "A", transform=ax8C.transAxes, fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE, va="top")
+ax8A.set_title("", fontsize=1)  # Clear any title
+ax8A.text(0.02, 0.98, "A", transform=ax8A.transAxes, fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE, va="top")
 
 # Panel B - F and L categorical analysis
 importlib.reload(plot_info)
@@ -826,45 +825,40 @@ plot_info.create_horizontal_bar_chart(
     other_n={"authors": "n_authors"},
     pct_axis_label="% of Claims",
     #group_axis_label="Previous mentee experience",
-    ax=ax8A,
+    orientation="vertical",
+    ax=ax8B,
 )
-ax8A.set_title("B", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
-
-# Capture legend handles from B
-lg8 = ax8A.get_legend()
-handles8 = lg8.legend_handles
-labels8 = [t.get_text() for t in lg8.get_texts()]
-lg8.remove()
+ax8B.set_title("B", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # Panel C - Historical lab categorical analysis
+varA_fig9 = "Continuity"
+varA_fig9_data = leading_author_claims  # No special filtering for Continuity
+
+# Generate grouped data for Continuity
+grpA_fig9, label_mapA_fig9 = _make_group_fig8(varA_fig9, all_categorical_variables[varA_fig9]["labels"], varA_fig9_data)
+
 importlib.reload(plot_info)
 plot_info.create_horizontal_bar_chart(
-    grpC,
+    grpA_fig9,
     title="",
-    labels_map=label_mapC,
+    labels_map=label_mapA_fig9,
     show_p_value=False,
     other_n={"authors": "n_authors"},
     pct_axis_label="% of Claims",
     #group_axis_label="Laboratory tradition",
-    ax=ax8B,
+    orientation="vertical",
+    ax=ax8C,
 )
-ax8B.set_title("C", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
-# Remove legend from C (if any)
-if ax8B.get_legend():
-    ax8B.get_legend().remove()
+ax8C.set_title("C", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
-# Place the common legend under panel C in 2 columns
-fig8.legend(
-    handles8,
-    labels8,
-    loc="lower center",
-    bbox_to_anchor=(0.25, 0.1),  # Position at bottom with some space
-    frameon=True,
-    ncol=2,  # 2 columns as requested
-    fontsize=MEDIUM_SIZE,
-    #title="Assessment Category",
-    title_fontsize=MEDIUM_SIZE
+plot_info.create_unified_legend(
+    fig8, 
+    [ax8B, ax8C], 
+    title=None,
+    bbox_to_anchor=(0.405, 0.85),  # Position above panel C
+    ncol=3 
 )
+
 
 fig8.tight_layout()
 fig8.savefig("figures/fig8_ABC_time_patterns_layout.png",
