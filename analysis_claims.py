@@ -817,7 +817,7 @@ print("Saved → figures/fig2_ABC_claims_distribution.png")
 #                      B = percentage ─ time periods
 
 importlib.reload(plot_info)
-fig3 = plt.figure(figsize=plot_info.VERTICAL_LAYOUT)
+fig3 = plt.figure(figsize=(9,14))
 gs3  = gridspec.GridSpec(
     2, 1,
     height_ratios=[0.5, 0.5],

@@ -516,7 +516,7 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
     
     # Add percentage formatting to y-axis for consistency
     if mode == 'percentage':
-        ax.yaxis.set_major_formatter(PercentFormatter(1.0))
+        ax.yaxis.set_major_formatter(PercentFormatter(100.0))  # Data is in 0-100 range, not 0-1
     
     # Rotate x-axis labels if needed
     # if by_time:
@@ -1230,8 +1230,8 @@ def create_unified_legend(fig, axes_list, bbox_to_anchor=(0.5, 0.95), ncol=2, ti
         Position for the legend (x, y) in figure coordinates
     ncol : int
         Number of columns in the legend
-    title : str
-        Title for the legend
+    title : str or None
+        Title for the legend (None for no title)
         
     Returns:
     --------
@@ -1267,7 +1267,8 @@ def create_unified_legend(fig, axes_list, bbox_to_anchor=(0.5, 0.95), ncol=2, ti
         fontsize=SMALL_SIZE,
         title_fontsize=MEDIUM_SIZE,
     )
-    legend.get_title().set_fontweight('bold')
+    if title:  # Only set title properties if title is provided
+        legend.get_title().set_fontweight('bold')
     
     return legend
 
