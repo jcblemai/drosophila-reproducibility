@@ -2,6 +2,7 @@
 # # Figure 4: First authors
 
 # %%
+import importlib
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -48,6 +49,7 @@ to_plot = author_metrics.copy()
 to_plot = to_plot[to_plot['Articles'] >= 0]
 to_plot = to_plot[to_plot['Major claims'] >= 0]
 
+importlib.reload(plot_info)
 fig, ax = plot_info.plot_author_irreproducibility_focused(
     df=to_plot,
     title="",
@@ -57,10 +59,12 @@ fig, ax = plot_info.plot_author_irreproducibility_focused(
     name_col='First Author Name',
 )
 plt.savefig('figures/fig4A_distribution_scatter.png', dpi=300, bbox_inches='tight')
+importlib.reload(plot_info)
 fig1, ax1 = plot_info.plot_challenged_histogram(to_plot, title="",)
 #plt.savefig('figures/fig4A-V2.png', dpi=300, bbox_inches='tight')
 
 # Create Lorenz curve visualization
+importlib.reload(plot_info)
 fig2, ax2 = plot_info.plot_lorenz_curve(to_plot, title="",)
 plt.savefig('figures/fig4B_distribution_gini.png', dpi=300, bbox_inches='tight')
 
@@ -157,6 +161,7 @@ for variable in all_categorical_variables.keys():
     
     labels=all_categorical_variables[variable]["labels"]
 
+    importlib.reload(plot_info)
     fig, ax = plot_info.create_horizontal_bar_chart(var_grouped, 
                                                     show_p_value=False, 
                                                     labels_map=labels, 
@@ -218,10 +223,12 @@ plt.tight_layout()
 # plt.savefig('figures/fig4B-nb_article_V1.png', dpi=300, bbox_inches='tight')
 
 # %%
+importlib.reload(plot_info)
 fig1, ax1 = plot_info.create_challenged_vs_unchallenged_scatter(to_plot,size_mult=100, name_col='First Author Name',)
 
 # %%
 
+importlib.reload(plot_info)
 fig2, ax2 = plot_info.create_challenged_vs_articles_scatter(to_plot, name_col='First Author Name')
 plt.savefig(f'figures/fig5C_scatterA.png', dpi=300, bbox_inches='tight')
 
@@ -241,6 +248,7 @@ to_plot["Articles"].value_counts().sort_index().plot(kind='bar')
 
 
 # %%
+importlib.reload(plot_info)
 fig, ax = plot_info.create_publication_scatter(
     to_plot,
     x_var='Unchallenged prop', 
@@ -264,13 +272,14 @@ to_plot = author_metrics.copy()
 # to_plot = to_plot[to_plot['Articles'] >= 2]
 # to_plot = to_plot[to_plot['Major claims'] >= 6]
 
-fig4 = plt.figure(figsize=(18, 6))
+fig4 = plt.figure(figsize=plot_info.HORIZONTAL_LAYOUT)
 gs4  = gridspec.GridSpec(1, 2, width_ratios=[1, 1], wspace=0.15)
 
 ax4A = fig4.add_subplot(gs4[0])   # A – Lorenz / Gini
 ax4B = fig4.add_subplot(gs4[1])   # B – scatter
 
 # Panel A: Lorenz curve + Gini
+importlib.reload(plot_info)
 plot_info.plot_lorenz_curve(
     to_plot,
     prop_column='Challenged prop',
@@ -280,9 +289,10 @@ plot_info.plot_lorenz_curve(
     print_gini=True,
     print_top_txt=False
 )
-ax4A.set_title("A", loc='left', fontweight='bold', fontsize=28)
+ax4A.set_title("A", loc='left', fontweight='bold', fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # Panel B: distribution scatter
+importlib.reload(plot_info)
 plot_info.plot_author_irreproducibility_focused(
     to_plot,
     title="",
@@ -293,7 +303,7 @@ plot_info.plot_author_irreproducibility_focused(
     name_col='First Author Name',
     ax=ax4B
 )
-ax4B.set_title("B", loc='left', fontweight='bold', fontsize=28)
+ax4B.set_title("B", loc='left', fontweight='bold', fontsize=plot_info.PANEL_LABEL_SIZE)
 
 fig4.tight_layout()
 fig4.savefig("figures/fig4_AB_first_author_horizontal.png",
@@ -316,7 +326,7 @@ import matplotlib.gridspec as gridspec
 #   │                     C                         │   full width
 #   └───────────────────────────────────────────────┘
 
-fig5 = plt.figure(figsize=(12, 18))
+fig5 = plt.figure(figsize=plot_info.COMPLEX_LAYOUT)
 gs5  = gridspec.GridSpec(
     2, 2,
     width_ratios=[0.25, 0.75],
@@ -348,6 +358,7 @@ grpA = wrangling.create_author_metric(
 for col in plot_info.assessment_columns:
     grpA[f'{col}_prop'] = grpA[col] / grpA['Major claims']
 
+importlib.reload(plot_info)
 plot_info.create_horizontal_bar_chart(
     grpA,
     title="",
@@ -359,7 +370,7 @@ plot_info.create_horizontal_bar_chart(
     group_axis_label=varA,
     ax=axA,
 )
-axA.set_title("A", loc="left", fontweight="bold", fontsize=24, x=-0.2, y=1.05)
+axA.set_title("A", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE, x=-0.2, y=1.05)
 
 # Save legend handles from panel A
 lg = axA.get_legend()
@@ -381,6 +392,7 @@ grpB = wrangling.create_author_metric(
 for col in plot_info.assessment_columns:
     grpB[f'{col}_prop'] = grpB[col] / grpB['Major claims']
 
+importlib.reload(plot_info)
 plot_info.create_horizontal_bar_chart(
     grpB,
     title="",
@@ -392,7 +404,7 @@ plot_info.create_horizontal_bar_chart(
     group_axis_label=varB,
     ax=axB,
 )
-axB.set_title("B", loc="left", fontweight="bold", fontsize=24, x=-0.1, y=1.05)
+axB.set_title("B", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE, x=-0.1, y=1.05)
 # Ensure panel B legend is removed
 if axB.get_legend():
     axB.get_legend().remove()
@@ -400,6 +412,7 @@ if axB.get_legend():
 # ── Panel C : scatter – challenged vs. articles ───────────────────
 
 to_plot = author_metrics.copy()
+importlib.reload(plot_info)
 plot_info.create_challenged_vs_articles_scatter(
     to_plot,
     annotate_top_n=0,
@@ -408,7 +421,7 @@ plot_info.create_challenged_vs_articles_scatter(
     #name_col='First Author Name',
     ax=axC
 )
-axC.set_title("C", loc="left", fontweight="bold", fontsize=24, x=-0.1, y=1.05)
+axC.set_title("C", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE, x=-0.1, y=1.05)
 
 # Unified legend in upper-right of panel A
 fig5.axes[1].legend(

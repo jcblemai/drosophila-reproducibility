@@ -12,6 +12,7 @@ import seaborn as sns
 import numpy as np
 import statsmodels.api as sm
 import stat_lib
+import importlib
 
 from pathlib import Path
 # Create directory structure if it doesn't exist
@@ -74,6 +75,7 @@ print(f"Among the {len(to_plot)} PIs, we identified {len(to_plot[to_plot['Challe
       f" {max(to_plot['Challenged prop']*100)}% ")
 
 
+importlib.reload(plot_info)
 fig, ax = plot_info.plot_author_irreproducibility_focused(
     df=to_plot,
     title="",
@@ -83,10 +85,12 @@ fig, ax = plot_info.plot_author_irreproducibility_focused(
     name_col='Leading Author Name',
 )
 plt.savefig('figures/fig6A_distribution_scatter.png', dpi=300, bbox_inches='tight')
+importlib.reload(plot_info)
 fig1, ax1 = plot_info.plot_challenged_histogram(to_plot,title="",)
 #plt.savefig('figures/fig5A-V2.png', dpi=300, bbox_inches='tight')
 
 # Create Lorenz curve visualization
+importlib.reload(plot_info)
 fig2, ax2 = plot_info.plot_lorenz_curve(to_plot,
                                         title="",)
 plt.savefig('figures/fig6B_distribution_gini.png', dpi=300, bbox_inches='tight')
@@ -218,6 +222,7 @@ for variable in all_categorical_variables.keys():
     print(var_grouped[['Major claims', 'Articles', 
                         'Verified_prop', 'Challenged_prop', 'Unchallenged_prop', 'n_authors']])
 
+    importlib.reload(plot_info)
     fig, ax = plot_info.create_horizontal_bar_chart(var_grouped, 
                                                     show_p_value=False, 
                                                     labels_map=labels, 
@@ -294,6 +299,7 @@ min_articles = 2
 min_claims = 6
 to_plot = to_plot[to_plot['Articles'] >= min_articles]
 to_plot = to_plot[to_plot['Major claims'] >= min_claims]
+importlib.reload(plot_info)
 fig1, ax1 = plot_info.create_challenged_vs_unchallenged_scatter(to_plot, name_col="Leading Author Name")
 print("This version of fig 9B is not the final one.")
 plt.savefig('figures/fig9B.png', dpi=300, bbox_inches='tight')
@@ -303,6 +309,7 @@ to_plot
 
 # %%
 
+importlib.reload(plot_info)
 fig2, ax2 = plot_info.create_challenged_vs_articles_scatter(to_plot, name_col="Leading Author Name")
 plt.savefig(f'figures/fig7B_scatterA.png', dpi=300, bbox_inches='tight')
 
@@ -321,6 +328,7 @@ to_plot["Articles"].value_counts().sort_index().plot(kind='bar')
 
 # %%
 # Example usage for general scatter plot:
+importlib.reload(plot_info)
 fig, ax = plot_info.create_publication_scatter(
     to_plot,
     x_var='Unchallenged prop', 
@@ -403,6 +411,7 @@ first_papers_year.to_csv("preprocessed_data/lh_first_papers_year.csv", sep=";", 
 to_plot = pd.merge(first_papers_year, author_metrics, left_index=True, right_on='leading_author_key', how='right')
 
 # %%
+importlib.reload(plot_info)
 fig, ax = plot_info.create_publication_scatter(
     to_plot,
     x_var='first_lh_or_fh_paper_year', 
@@ -487,7 +496,7 @@ plot_df = all_inter[all_inter["Interview"].notnull()].copy()
 plot_df["% Challenged"] = 100 * plot_df["Challenged"] / plot_df["Major claims"]
 
 # Plot
-plt.figure(figsize=(8, 6))
+plt.figure(figsize=plot_info.SINGLE_PANEL)
 sns.set(style="whitegrid", font_scale=1.2)
 
 # Swarmplot
@@ -527,13 +536,14 @@ to_plot_lead = author_metrics.copy()
 #to_plot_lead = to_plot_lead[(to_plot_lead["Articles"] >= 2) &
 #                            (to_plot_lead["Major claims"] >= 6)]
 
-fig6 = plt.figure(figsize=(18, 6))
+fig6 = plt.figure(figsize=plot_info.HORIZONTAL_LAYOUT)
 gs6  = gridspec.GridSpec(1, 2, width_ratios=[1, 1], wspace=0.15)
 
 ax6A = fig6.add_subplot(gs6[0])   # A – Lorenz / Gini
 ax6B = fig6.add_subplot(gs6[1])   # B – distribution scatter
 
 # Panel A: Lorenz curve + Gini
+importlib.reload(plot_info)
 plot_info.plot_lorenz_curve(
     to_plot_lead,
     prop_column="Challenged prop",
@@ -542,9 +552,10 @@ plot_info.plot_lorenz_curve(
     title="",
     ax=ax6A,
 )
-ax6A.set_title("A", loc="left", fontweight="bold", fontsize=28)
+ax6A.set_title("A", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # Panel B: distribution scatter
+importlib.reload(plot_info)
 plot_info.plot_author_irreproducibility_focused(
     to_plot_lead,
     title="",
@@ -555,7 +566,7 @@ plot_info.plot_author_irreproducibility_focused(
     annotate_top_n=0,
     ax=ax6B,
 )
-ax6B.set_title("B", loc="left", fontweight="bold", fontsize=28)
+ax6B.set_title("B", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # Unify legend (take from panel B)
 lg6 = ax6B.get_legend()
@@ -608,7 +619,7 @@ grpB, label_mapB = _make_group(varB, label_mapB)
 
 # ----------------------------------------------------------------------
 # Layout: 2 rows × 2 cols – left col 40 %, right col 60 %
-fig7 = plt.figure(figsize=(15, 10))
+fig7 = plt.figure(figsize=plot_info.COMPLEX_LAYOUT)
 gs7  = gridspec.GridSpec(
     2, 2,
     width_ratios=[0.4, 0.6],
@@ -622,6 +633,7 @@ ax7B = fig7.add_subplot(gs7[1, 0], sharex=ax7A)   # bottom-left (share y)
 ax7C = fig7.add_subplot(gs7[:, 1])                # right (span rows)
 
 # ── Panel A – Sex vertical bar ─────────────────────────────────────────
+importlib.reload(plot_info)
 plot_info.create_horizontal_bar_chart(
     grpA,
     title="",
@@ -632,7 +644,7 @@ plot_info.create_horizontal_bar_chart(
     group_axis_label=varA,
     ax=ax7A,
 )
-ax7A.set_title("A", loc="left", fontweight="bold", fontsize=24)
+ax7A.set_title("A", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # Capture legend handles from A
 lg7 = ax7A.get_legend()
@@ -641,6 +653,7 @@ labels7  = [t.get_text() for t in lg7.get_texts()]
 lg7.remove()
 
 # ── Panel B – Junior/Senior vertical bar ──────────────────────────────
+importlib.reload(plot_info)
 plot_info.create_horizontal_bar_chart(
     grpB,
     title="",
@@ -651,7 +664,7 @@ plot_info.create_horizontal_bar_chart(
     group_axis_label=varB,
     ax=ax7B,
 )
-ax7B.set_title("B", loc="left", fontweight="bold", fontsize=24)
+ax7B.set_title("B", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 # Remove legend from B (if any)
 if ax7B.get_legend():
     ax7B.get_legend().remove()
@@ -660,6 +673,7 @@ if ax7B.get_legend():
 scatter_df = author_metrics.copy()
 #scatter_df = scatter_df[(scatter_df["Articles"] >= 2) & (scatter_df["Major claims"] >= 6)]
 
+importlib.reload(plot_info)
 plot_info.create_challenged_vs_articles_scatter(
     scatter_df,
     annotate_top_n=8,
@@ -668,7 +682,7 @@ plot_info.create_challenged_vs_articles_scatter(
     #name_col="Leading Author Name",
     ax=ax7C,
 )
-ax7C.set_title("C", loc="left", fontweight="bold", fontsize=24)
+ax7C.set_title("C", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # ── Unified legend in upper-right of panel A ──────────────────────────
 ax7A.legend(
@@ -727,7 +741,7 @@ grpC, label_mapC = _make_group_fig8(varC, all_categorical_variables[varC]["label
 
 # Layout: 2 rows × 2 cols – left col 40%, right col 60%
 # Reduce height ratios to make space for legend at bottom
-fig8 = plt.figure(figsize=(15, 10))
+fig8 = plt.figure(figsize=plot_info.COMPLEX_LAYOUT)
 gs8 = gridspec.GridSpec(
     3, 2,
     width_ratios=[0.4, 0.6],
@@ -800,9 +814,10 @@ ax8C.spines['right'].set_visible(False)
 
 # Remove the automatic title that the function creates
 ax8C.set_title("", fontsize=1)  # Clear any title
-ax8C.text(0.02, 0.98, "A", transform=ax8C.transAxes, fontweight="bold", fontsize=24, va="top")
+ax8C.text(0.02, 0.98, "A", transform=ax8C.transAxes, fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE, va="top")
 
 # Panel B - F and L categorical analysis
+importlib.reload(plot_info)
 plot_info.create_horizontal_bar_chart(
     grpB,
     title="",
@@ -813,7 +828,7 @@ plot_info.create_horizontal_bar_chart(
     #group_axis_label="Previous mentee experience",
     ax=ax8A,
 )
-ax8A.set_title("B", loc="left", fontweight="bold", fontsize=24)
+ax8A.set_title("B", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # Capture legend handles from B
 lg8 = ax8A.get_legend()
@@ -822,6 +837,7 @@ labels8 = [t.get_text() for t in lg8.get_texts()]
 lg8.remove()
 
 # Panel C - Historical lab categorical analysis
+importlib.reload(plot_info)
 plot_info.create_horizontal_bar_chart(
     grpC,
     title="",
@@ -832,7 +848,7 @@ plot_info.create_horizontal_bar_chart(
     #group_axis_label="Laboratory tradition",
     ax=ax8B,
 )
-ax8B.set_title("C", loc="left", fontweight="bold", fontsize=24)
+ax8B.set_title("C", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 # Remove legend from C (if any)
 if ax8B.get_legend():
     ax8B.get_legend().remove()
@@ -871,7 +887,7 @@ scatter_df_fig9 = pd.merge(first_papers_year, author_metrics, left_index=True, r
 scatter_df_fig9 = scatter_df_fig9[(scatter_df_fig9["first_lh_or_fh_paper_year"] >= 1995)]
 
 # Layout: 2 rows × 2 cols – legend above stackplot, scatter takes full right side
-fig9 = plt.figure(figsize=(15, 8))
+fig9 = plt.figure(figsize=plot_info.HORIZONTAL_LAYOUT)
 gs9 = gridspec.GridSpec(
     2, 2,
     width_ratios=[0.25, 0.75],  # Left 25%, right 75%
@@ -885,6 +901,7 @@ ax9A = fig9.add_subplot(gs9[1, 0])       # bottom-left - categorical (70% height
 ax9B = fig9.add_subplot(gs9[:, 1])       # right - scatter (spans both rows)
 
 # Panel A - Continuity vertical bar chart
+importlib.reload(plot_info)
 plot_info.create_horizontal_bar_chart(
     grpA_fig9,
     title="",
@@ -896,7 +913,7 @@ plot_info.create_horizontal_bar_chart(
     orientation="vertical",  # Make it vertical
     ax=ax9A,
 )
-ax9A.set_title("A", loc="left", fontweight="bold", fontsize=24)
+ax9A.set_title("A", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # Capture legend handles from A
 lg9 = ax9A.get_legend()
@@ -905,6 +922,7 @@ labels9 = [t.get_text() for t in lg9.get_texts()]
 lg9.remove()
 
 # Panel B - Challenged vs Unchallenged scatter
+importlib.reload(plot_info)
 plot_info.create_challenged_vs_unchallenged_scatter(
     scatter_df_fig9,
     annotate_top_n=0,
@@ -913,7 +931,7 @@ plot_info.create_challenged_vs_unchallenged_scatter(
     name_col="Leading Author Name",
     ax=ax9B,
 )
-ax9B.set_title("B", loc="left", fontweight="bold", fontsize=24)
+ax9B.set_title("B", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # Place the legend vertically above the stacked plot
 ax9_legend.axis('off')  # Hide the axes

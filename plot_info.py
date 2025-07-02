@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.patheffects import withStroke
 import numpy as np
 from scipy import stats
-import matplotlib as mpl
+# import matplotlib as mpl  # Not needed - using direct imports
 from matplotlib.colors import to_rgba
 import plotly.graph_objects as go
 from matplotlib.ticker import PercentFormatter, MaxNLocator
@@ -16,9 +16,18 @@ import matplotlib.gridspec as gridspec
 
 # Set style parameters
 plt.style.use('seaborn-v0_8-white')
-SMALL_SIZE = 16
-MEDIUM_SIZE = 18
-BIGGER_SIZE = 20
+SMALL_SIZE = 18
+MEDIUM_SIZE = 20
+BIGGER_SIZE = 22
+
+# Standardized figure sizes for consistency
+HORIZONTAL_LAYOUT = (15, 8)    # For side-by-side panels (AB)
+COMPLEX_LAYOUT = (15, 10)      # For multi-panel figures (ABC)
+VERTICAL_LAYOUT = (10, 12)     # For stacked panels
+SINGLE_PANEL = (10, 8)         # For individual plots
+
+# Panel label font size (for A, B, C labels)
+PANEL_LABEL_SIZE = 28
 
 plt.rc('font', size=SMALL_SIZE)
 plt.rc('axes', titlesize=BIGGER_SIZE)
@@ -45,7 +54,13 @@ ASSESSMENT_COLORS = {
     'Partially Verified': '#e9f241',  # Yellow
     'Verified': '#2ecc71'       # Green
 }
-
+ASSESSMENT_COLORS = {
+    'Challenged': '#c0392b',          # Deep red
+    'Mixed': '#d68910',               # Warm amber  
+    'Unchallenged': '#85929e',        # Neutral gray
+    'Partially Verified': '#f1c40f',  # Golden yellow
+    'Verified': '#27ae60'             # Forest green
+}
 # Define the assessment category order for consistent plotting (reversed)
                     # TOP                                                          # Bottom
 ASSESSMENT_ORDER = ['Challenged', 'Mixed', 'Partially Verified', 'Unchallenged', 'Verified']
@@ -335,7 +350,9 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
                 detailed_plot_data.index,
                 detailed_plot_data[cat],
                 bottom=bottom,
-                color=assessment_colors[cat]
+                color=assessment_colors[cat],
+                edgecolor="white",
+                linewidth=0.5
             )
             
             # Store handle and label for legend
@@ -386,8 +403,8 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
                             height = total_height
                         else:
                             # For standard categories, use the precalculated positions
-                            bottom_pos = category_positions[std_cat]['bottom'][i]
-                            height = category_positions[std_cat]['height'][i]
+                            bottom_pos = category_positions[std_cat]['bottom'].iloc[i] if hasattr(category_positions[std_cat]['bottom'], 'iloc') else category_positions[std_cat]['bottom'][i]
+                            height = category_positions[std_cat]['height'].iloc[i] if hasattr(category_positions[std_cat]['height'], 'iloc') else category_positions[std_cat]['height'][i]
                         
                         # Skip if height is zero (avoid division by zero)
                         if height <= 0:
@@ -396,45 +413,47 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
                         # Calculate center position
                         center_pos = bottom_pos + (height / 2)
                         
-                        # Get the percentage for this category
-                        pct = standard_pct.loc[group, std_cat]
-                        count = int(standard_pivot.loc[group, std_cat])
+                        # Get the percentage for this category (ensure scalar)
+                        pct_val = standard_pct.loc[group, std_cat]
+                        pct = float(pct_val.item() if hasattr(pct_val, 'item') else pct_val)
+                        count_val = standard_pivot.loc[group, std_cat]
+                        count = int(count_val.item() if hasattr(count_val, 'item') else count_val)
                         
                         # Skip small categories except for 'Challenged'
                         if pct <= 5 and std_cat != 'Challenged':
                             continue
                             
-                        # Format as percentage for the percentage plot
-                        label_text = f'{pct:.1f}%'
+                        # Format as percentage with consistent logic (pct is already 0-100)
+                        label_text = f'{pct:.0f}%' if pct >= 10 else f'{pct:.1f}%'
                         
-                        # Add the text label
-                        text = ax.text(
+                        # Add the text label with better formatting
+                        ax.text(
                             i, center_pos,
                             label_text,
                             ha='center', va='center',
                             color='white', fontweight='bold',
                             fontsize=SMALL_SIZE
-                        )
-                        text.set_path_effects([withStroke(linewidth=3, foreground='black')])
+                        ).set_path_effects([withStroke(linewidth=3, foreground='black', alpha=0.7)])
 
         # Add total counts at the top of each column
         for i, group in enumerate(group_order):
             if group in row_totals.index:
                 total = int(row_totals[group])
                 # Position the text slightly above the top of the bar
-                top_pos = bottom[i] + 1  # Add a small offset
+                top_pos = (bottom.iloc[i] if hasattr(bottom, 'iloc') else bottom[i]) + 1  # Add a small offset
                 ax.text(
                     i, top_pos,
-                    f'n={total}',
+                    f'$n_c$={total}',
                     ha='center', va='bottom',
                     fontweight='normal',
-                    fontsize=MEDIUM_SIZE
+                    fontsize=MEDIUM_SIZE,
+                    usetex=True
                 )
     
-    # Customize the plot
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.grid(axis='y', linestyle='--', alpha=0.3, color='gray')
+    # Customize the plot with consistent styling
+    for spine in ("top", "right"):
+        ax.spines[spine].set_visible(False)
+    ax.grid(axis='both', linestyle='--', alpha=0.3)
     ax.set_axisbelow(True)
     
     # Set titles and labels
@@ -457,9 +476,47 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
     ax.set_xlabel(x_label, labelpad=10)
     ax.set_ylabel(y_label, labelpad=10)
     
+    # Modify x-tick labels to include journal counts for consistency with create_horizontal_bar_chart
+    if not by_time and mode == 'percentage':  # Only show for journal category plots in percentage mode
+        # Count unique journals in each category
+        journal_counts = {}
+        for group in group_order:
+            if group in filtered_df['group_by'].values:
+                group_data = filtered_df[filtered_df['group_by'] == group]
+                # Count unique journals by counting unique journal names or impact factors
+                if 'journal_name' in df.columns:
+                    unique_journals = group_data['journal_name'].nunique()
+                else:
+                    # Fallback: estimate from impact factor ranges
+                    if group == 'Low Impact':
+                        unique_journals = len(df[(df['impact_factor'] < 10) & (df['impact_factor'].notna())]['journal_name'].unique()) if 'journal_name' in df.columns else 0
+                    elif group == 'High Impact':
+                        unique_journals = len(df[(df['impact_factor'] >= 10) & (df['impact_factor'] < 50) & (df['impact_factor'].notna())]['journal_name'].unique()) if 'journal_name' in df.columns else 0
+                    elif group == 'Trophy Journals':
+                        unique_journals = len(df[(df['impact_factor'] >= 50) & (df['impact_factor'].notna())]['journal_name'].unique()) if 'journal_name' in df.columns else 0
+                    else:
+                        unique_journals = 0
+                journal_counts[group] = unique_journals
+        
+        # Update x-tick labels to include journal counts
+        new_labels = []
+        for i, group in enumerate(group_order):
+            if group in journal_counts:
+                new_labels.append(f'{group}\n({journal_counts[group]})')
+            else:
+                new_labels.append(group)
+        
+        # Set both ticks and labels explicitly to avoid warnings
+        ax.set_xticks(range(len(group_order)))
+        ax.set_xticklabels(new_labels)
+    
     # Ensure y-axis has enough room for the total count labels
     y_max = max(bottom) * 1.1  # Add 10% padding
     ax.set_ylim(0, y_max)
+    
+    # Add percentage formatting to y-axis for consistency
+    if mode == 'percentage':
+        ax.yaxis.set_major_formatter(PercentFormatter(1.0))
     
     # Rotate x-axis labels if needed
     # if by_time:
@@ -469,17 +526,18 @@ def create_stacked_bar_plot(df, mode='absolute', by_time=False, use_expanded=Fal
     handles = handles[::-1]
     labels = labels[::-1]
     
-    # Add legend with corrected order
+    # Add legend with corrected order and consistent styling
     legend = ax.legend(
         handles=handles,
         labels=labels,
-        title='Assessment Type',
+        title='Assessment Category',
         bbox_to_anchor=(1.02, 0.5),
         loc='center left',
-        fontsize=SMALL_SIZE,
-        title_fontsize=MEDIUM_SIZE
+        frameon=True,
+        framealpha=0.9,
+        edgecolor='lightgray'
     )
-    legend.get_frame().set_linewidth(0.0)
+    legend.get_title().set_fontweight('bold')
     
     # Adjust layout
     plt.tight_layout()
@@ -1028,7 +1086,7 @@ def create_horizontal_bar_chart(
                         f"{width:.0%}" if width >= 0.1 else f"{width:.1%}",
                         ha="center",
                         va="center",
-                        fontsize=12,
+                        fontsize=SMALL_SIZE,
                         fontweight="bold",
                         color="white",
                     ).set_path_effects([withStroke(linewidth=3, foreground="black", alpha=0.7)])
@@ -1081,7 +1139,7 @@ def create_horizontal_bar_chart(
                         f"{height:.0%}" if height >= 0.1 else f"{height:.1%}",
                         ha="center",
                         va="center",
-                        fontsize=12,
+                        fontsize=SMALL_SIZE,
                         fontweight="bold",
                         color="white",
                     ).set_path_effects([withStroke(linewidth=3, foreground="black", alpha=0.7)])
@@ -1109,11 +1167,9 @@ def create_horizontal_bar_chart(
     for lab in var_grouped.index:
         base_label = labels_map.get(lab, str(lab)) if labels_map else str(lab)
         for key, value in other_n.items():
-            if orientation == "horizontal":
-                base_label += f"\n({var_grouped.loc[lab, value]})"
-            else:  # vertical
-                base_label += f"({var_grouped.loc[lab, value]})"
-            #base_label += f"\n(n={var_grouped.loc[lab, value]})"
+            separator = "\n" if orientation == "horizontal" else "\n"
+            #base_label += f"{separator}({var_grouped.loc[lab, value]} {key.lower()})"
+            base_label += f"{separator}({var_grouped.loc[lab, value]})"
         new_labels.append(base_label)
 
     if orientation == "horizontal":
@@ -1123,7 +1179,7 @@ def create_horizontal_bar_chart(
         if group_axis_label is not None:
             ax.set_ylabel(group_axis_label, fontweight="normal")
     else:
-        ax.set_xticklabels(new_labels, fontweight="normal", rotation=45, ha="right")
+        ax.set_xticklabels(new_labels, fontweight="normal", rotation=0, ha="center")
         ax.set_ylim(0, 1.0)
         ax.set_ylabel(pct_axis_label, fontweight="normal")
 
@@ -1131,9 +1187,9 @@ def create_horizontal_bar_chart(
     ax.set_title(title, fontweight="bold", pad=20)
 
     if orientation == "horizontal":
-        ax.xaxis.set_major_formatter(mpl.ticker.PercentFormatter(1.0))
+        ax.xaxis.set_major_formatter(PercentFormatter(1.0))
     else:  # vertical -> percentages are on y‑axis
-        ax.yaxis.set_major_formatter(mpl.ticker.PercentFormatter(1.0))
+        ax.yaxis.set_major_formatter(PercentFormatter(1.0))
 
     ax.grid(axis="both", linestyle="--", alpha=0.3)
     ax.set_axisbelow(True)
@@ -1153,12 +1209,67 @@ def create_horizontal_bar_chart(
     legend.get_title().set_fontweight("bold")
 
     # Add x-axis label for vertical orientation
-    if orientation == "vertical":
-        label = group_axis_label if group_axis_label is not None else "Institution Shanghai ranking"
-        ax.set_xlabel(label, fontweight="normal")
+    if orientation == "vertical" and group_axis_label is not None:
+        ax.set_xlabel(group_axis_label, fontweight="normal")
 
     plt.tight_layout()
     return fig, ax
+
+
+def create_unified_legend(fig, axes_list, bbox_to_anchor=(0.5, 0.95), ncol=2, title="Assessment Category"):
+    """
+    Create a unified legend for composite figures with full control over placement.
+    
+    Parameters:
+    -----------
+    fig : matplotlib.figure.Figure
+        The figure to add the legend to
+    axes_list : list
+        List of axes to remove individual legends from
+    bbox_to_anchor : tuple
+        Position for the legend (x, y) in figure coordinates
+    ncol : int
+        Number of columns in the legend
+    title : str
+        Title for the legend
+        
+    Returns:
+    --------
+    legend : matplotlib.legend.Legend
+        The created legend object
+    """
+    import matplotlib.patches as patches
+    
+    # Remove legends from all individual panels
+    for ax in axes_list:
+        leg = ax.get_legend()
+        if leg:
+            leg.remove()
+    
+    # Create legend handles manually using assessment categories
+    handles = []
+    labels = ASSESSMENT_ORDER
+    
+    for category in labels:
+        color = ASSESSMENT_COLORS[category]
+        handle = patches.Rectangle((0, 0), 1, 1, facecolor=color, edgecolor='white', linewidth=0.5)
+        handles.append(handle)
+    
+    # Create and place the legend
+    legend = fig.legend(
+        handles,
+        labels,
+        title=title,
+        loc="center",
+        bbox_to_anchor=bbox_to_anchor,
+        ncol=ncol,
+        frameon=True,
+        fontsize=SMALL_SIZE,
+        title_fontsize=MEDIUM_SIZE,
+    )
+    legend.get_title().set_fontweight('bold')
+    
+    return legend
 
 
 

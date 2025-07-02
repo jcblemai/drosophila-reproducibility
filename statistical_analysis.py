@@ -268,7 +268,7 @@ df[['year_s1','year_s2','year_s3']] = pd.DataFrame(year_splines, index=df.index)
 #df['challenged_flag'] = df['assessment_type'].eq('Unchallenged, logically inconsistent').astype(int) 
 #df['challenged_flag'] = df['assessment_type'].eq('Unchallenged').astype(int) 
 #df['challenged_flag'] = df['assessment_type_grouped'].eq('Mixed').astype(int)
-#df['challenged_flag'] = df['assessment_type_grouped'].eq('Verified').astype(int) 
+df['challenged_flag'] = df['assessment_type_grouped'].eq('Verified').astype(int) 
 #df['challenged_flag'] = df['assessment_type_grouped'].eq('Partially Verified').astype(int) 
 #df['challenged_flag'] = df['assessment_type_grouped'].eq('Unchallenged').astype(int) 
 # Bambi syntax – common (fixed) effects + group-specific intercepts

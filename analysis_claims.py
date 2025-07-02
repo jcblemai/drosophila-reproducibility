@@ -8,6 +8,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import importlib
 
 from matplotlib.patheffects import withStroke
 import plot_info
@@ -118,11 +119,13 @@ journal_claims_table.to_csv("figures/tableS1_claims_by_journal.csv", index=False
 
 # %%
 # Generate and save journal category plots
+importlib.reload(plot_info)
 fig1, ax1 = plot_info.create_stacked_bar_plot(major_claims_df, mode='absolute', by_time=False, use_expanded=False)
 plt.savefig('figures/fig2A_claims_journal_absolute.png', dpi=300, bbox_inches='tight')
 
 #plt.savefig('figures/fig2_claims_journal_absolute.pdf', bbox_inches='tight')
 
+importlib.reload(plot_info)
 fig2, ax2 = plot_info.create_stacked_bar_plot(major_claims_df, mode='percentage', by_time=False, use_expanded=False)
 plt.savefig('figures/fig2B_claims_journal_percentage.png', dpi=300, bbox_inches='tight')
 #plt.savefig('figures/fig2_claims_journal_percentage.pdf', bbox_inches='tight')
@@ -134,10 +137,12 @@ plt.savefig('figures/fig2B_claims_journal_percentage.png', dpi=300, bbox_inches=
 
 # %%
 # Generate and save time period plots
+importlib.reload(plot_info)
 fig3, ax3 = plot_info.create_stacked_bar_plot(major_claims_df, mode='absolute', by_time=True)
 plt.savefig('figures/fig3A_claims_time_absolute.png', dpi=300, bbox_inches='tight')
 #plt.savefig('figures/claims_time_absolute.pdf', bbox_inches='tight')
 
+importlib.reload(plot_info)
 fig4, ax4 = plot_info.create_stacked_bar_plot(major_claims_df, mode='percentage', by_time=True)
 plt.savefig('figures/fig3B_claims_time_percentage.png', dpi=300, bbox_inches='tight')
 #plt.savefig('figures/claims_time_percentage.pdf', bbox_inches='tight')
@@ -154,12 +159,14 @@ plt.savefig('figures/fig3B_claims_time_percentage.png', dpi=300, bbox_inches='ti
 
 # %%
 # Create Sankey diagram
+importlib.reload(plot_info)
 to_plot = major_claims_df[["assertion_type", "label", "assessment_type", "rank_assessment_type"]]
 fig = plot_info.create_sankey_diagram(to_plot)
 fig.show()
 fig.write_html('figures/fig1_claims_sankey.html')
 
 # %%
+importlib.reload(plot_info)
 fig = plot_info.create_sankey_diagram2(to_plot)
 fig.show()
 fig.write_html('figures/fig1_claims_sankey.html')
@@ -408,6 +415,7 @@ def create_simple_horizontal_country_chart(
 
 
 # Example usage for simple chart:
+importlib.reload(plot_info)
 fig, ax = create_simple_horizontal_country_chart(
     df=to_plot,
     var_to_plot='Challenged_prop',
@@ -622,11 +630,13 @@ def create_two_panel_country_chart(
 
 
 # Example usage for two-panel chart:
+importlib.reload(plot_info)
 fig, (ax1, ax2) = create_two_panel_country_chart(
     df=to_plot,
     min_claims=5,
     sort_by='Challenged_prop',
-    title="Scientific Reproducibility Analysis by Country"
+    title="Scientific Reproducibility Analysis by Country",
+    fig_size=plot_info.HORIZONTAL_LAYOUT
 )
 # TODO: sort then on opartially verified.
 plt.savefig('figures/fig11C_country.png', dpi=300, bbox_inches='tight')
@@ -683,6 +693,7 @@ labels_map = {
 
 
 
+importlib.reload(plot_info)
 fig, ax = plot_info.create_horizontal_bar_chart(var_grouped, 
                                                 show_p_value=False, 
                                                 labels_map=labels_map, 
@@ -699,20 +710,22 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import plot_info
 
-fig = plt.figure(figsize=(16, 11))
+importlib.reload(plot_info)
+fig = plt.figure(figsize=plot_info.COMPLEX_LAYOUT)
 
-# GridSpec: 2 rows × 2 cols  (heights 30 %, 70 %; widths 50 %, 50 %)
+# GridSpec: 3 rows × 2 cols  - Reserve top-right space for legend
 gs = gridspec.GridSpec(
-    2, 2,
-    width_ratios=[1, 1],
-    height_ratios=[0.5, 0.5],
-    wspace=0.15,
-    hspace=0.15
+    3, 2,
+    width_ratios=[.45, .55],
+    height_ratios=[0.15, 0.35, 0.55],  # Add space at bottom for legend placement
+    wspace=0.2,
+    hspace=0.2
 )
 
-axA = fig.add_subplot(gs[0, 0])     # Panel A
-axB = fig.add_subplot(gs[1, 0])     # Panel B
-axC = fig.add_subplot(gs[:, 1])     # Panel C (spans both rows)
+axA = fig.add_subplot(gs[:2, 0])     # Panel A
+axB = fig.add_subplot(gs[2, 0])     # Panel B  
+axC = fig.add_subplot(gs[1:, 1])    # Panel C (spans first 2 rows only)
+# Legend space available at gs[2, 1] or positioned freely
 
 # ── Panel A – absolute counts ─────────────────────────────────────────
 plot_info.create_stacked_bar_plot(
@@ -722,7 +735,7 @@ plot_info.create_stacked_bar_plot(
     use_expanded=False,
     ax=axA
 )
-axA.set_title("A", loc='left', fontweight='bold', fontsize=30)
+axA.set_title("A", loc='left', fontweight='bold', fontsize=plot_info.PANEL_LABEL_SIZE)
 axA.set_xlabel("")
 axA.set_xticklabels([])
 
@@ -734,7 +747,7 @@ plot_info.create_stacked_bar_plot(
     use_expanded=False,
     ax=axB
 )
-axB.set_title("B", loc='left', fontweight='bold', fontsize=30)
+axB.set_title("B", loc='left', fontweight='bold', fontsize=plot_info.PANEL_LABEL_SIZE)
 
 # ── Panel C – institution bar chart (vertical) ────────────────────────
 
@@ -756,30 +769,42 @@ plot_info.create_horizontal_bar_chart(
     pct_axis_label="% of Claims",        # controls x (horizontal) or y (vertical)
     group_axis_label="Institution Shanghai ranking"  # controls y (horizontal) or x (vertical)
 )
-axC.set_title("C", loc='left', fontweight='bold', fontsize=30)
+axC.set_title("C", loc='left', fontweight='bold', fontsize=plot_info.PANEL_LABEL_SIZE)
 
-# remove legends from B and C
-for ax in (axB, axC):
-    leg = ax.get_legend()
-    if leg:
-        leg.remove()
-
-# --- grab legend entries from panel B ---------------------------------
-legA = axA.get_legend()           # <-- this should exist after the plot call
-handles = legA.legend_handles
-labels  = [t.get_text() for t in legA.get_texts()]
-# unified legend, anchored inside Panel A, upper-right
-axA.legend(
-    handles,
-    labels,
-    #title="Assessment Category",
-    loc="upper right",       # 1 = upper-right corner of the Axes
-    bbox_to_anchor=(1.0, 1.0),   # (x,y) with Axes coords
-    ncol=1,                 # single column fits nicely
-    frameon=True,
-    fontsize=18,
+# Create the plots for panels A and B first to complete the layout
+# ── Panel A – absolute counts (recreate properly) ─────────────────────
+plot_info.create_stacked_bar_plot(
+    major_claims_df,
+    mode='absolute',
+    by_time=False,
+    use_expanded=False,
+    ax=axA
 )
-fig.tight_layout(rect=[0, 0.07, 1, 1])  # leave space at bottom for legend
+axA.set_title("A", loc='left', fontweight='bold', fontsize=plot_info.PANEL_LABEL_SIZE)
+axA.set_xlabel("")
+axA.set_xticklabels([])
+
+# ── Panel B – percentage (recreate properly) ──────────────────────────
+plot_info.create_stacked_bar_plot(
+    major_claims_df,
+    mode='percentage',
+    by_time=False,
+    use_expanded=False,
+    ax=axB
+)
+axB.set_title("B", loc='left', fontweight='bold', fontsize=plot_info.PANEL_LABEL_SIZE)
+
+# Create unified two-column legend above panel C using helper function
+plot_info.create_unified_legend(
+    fig, 
+
+    [axA, axB, axC], 
+    title=None,
+    bbox_to_anchor=(0.705, 0.85),  # Position above panel C
+    ncol=2                          # Two columns as requested
+)
+
+fig.tight_layout(rect=(0, 0.05, 1, 0.92))  # Leave space for legend at top
 fig.savefig('figures/fig2_ABC_claims_distribution.png',
             dpi=300, bbox_inches='tight')
 print("Saved → figures/fig2_ABC_claims_distribution.png")
@@ -791,7 +816,8 @@ print("Saved → figures/fig2_ABC_claims_distribution.png")
 # Two vertical panels: A = absolute counts ─ time periods
 #                      B = percentage ─ time periods
 
-fig3 = plt.figure(figsize=(8, 13))
+importlib.reload(plot_info)
+fig3 = plt.figure(figsize=plot_info.VERTICAL_LAYOUT)
 gs3  = gridspec.GridSpec(
     2, 1,
     height_ratios=[0.5, 0.5],
@@ -809,7 +835,7 @@ plot_info.create_stacked_bar_plot(
     use_expanded=False,
     ax=ax3A,
 )
-ax3A.set_title("A", loc="left", fontweight="bold", fontsize=30)
+ax3A.set_title("A", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 ax3A.set_xlabel("")           # remove redundant x‑label
 ax3A.set_xticklabels([])
 
@@ -821,7 +847,7 @@ plot_info.create_stacked_bar_plot(
     use_expanded=False,
     ax=ax3B,
 )
-ax3B.set_title("B", loc="left", fontweight="bold", fontsize=30)
+ax3B.set_title("B", loc="left", fontweight="bold", fontsize=plot_info.PANEL_LABEL_SIZE)
 
 leg = ax3B.get_legend()
 if leg:
@@ -839,7 +865,7 @@ ax3A.legend(
     loc="upper left",
     frameon=True,
     ncol=1,
-    fontsize=18,
+    fontsize=plot_info.MEDIUM_SIZE,
 )
 
 fig3.tight_layout(rect=[0, 0.02, 1, 1])
