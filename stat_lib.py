@@ -548,6 +548,207 @@ def create_forest_plot(data, title="", color='black'):
     #plt.subplots_adjust(left=0.1)  # Increase left margin more for labels
     return fig, ax
 
+def create_forest_plot2(data, title="", color='darkblue'):
+    """
+    Create forest plot with custom categories and labels, working with any data format.
+    Based on create_forest_plot but with custom organization and inline OR values.
+    
+    Parameters:
+    -----------
+    data : DataFrame with OR, OR_low, OR_high columns and variable names as index
+    title : str
+    color : str
+    
+    Returns:
+    --------
+    tuple of (fig, ax) objects
+    """
+    if len(data) == 0:
+        print("No data to plot")
+        return None, None
+    
+    # Define custom categories with patterns for both cleaned and raw variable names
+    custom_categories = {
+        'Journals Impact Factor': [
+            ('Journal Category: High Impact', 'High vs Low Impact'),
+            ('Journal Category: Trophy Journals', 'Trophy vs Low Impact'),
+            # Raw patterns
+            ("journal_category, Treatment('Low Impact'))[High Impact]", 'High vs Low Impact'),
+            ("journal_category, Treatment('Low Impact'))[Trophy Journals]", 'Trophy vs Low Impact')
+        ],
+        'Shangai University Rank': [
+            ('Ranking Category: Top 50', 'Top 50 vs Not Ranked'),
+            ('Ranking Category: 51-100', '51-100 vs Not Ranked'), 
+            ('Ranking Category: 101+', '101+ vs Not Ranked'),
+            # Raw patterns
+            ("ranking_category, Treatment('Not Ranked'))[Top 50]", 'Top 50 vs Not Ranked'),
+            ("ranking_category, Treatment('Not Ranked'))[51-100]", '51-100 vs Not Ranked'),
+            ("ranking_category, Treatment('Not Ranked'))[101+]", '101+ vs Not Ranked')
+        ],
+        'Date of publication': [
+            ('Year (Splines): Spline 1', 'Spline 1'),
+            ('Year (Splines): Spline 2', 'Spline 2'),
+            ('Year (Splines): Spline 3', 'Spline 3'),
+            # Raw patterns
+            ('year_s1', 'Spline 1'),
+            ('year_s2', 'Spline 2'),
+            ('year_s3', 'Spline 3')
+        ],
+        'First Authors Variables': [
+            ('First Author Sex: Female', 'Female vs Male'),
+            ('Phd Postdoc: Post-doc', 'Post-doc vs PhD'),
+            ('PhD_Postdoc: Post-doc', 'Post-doc vs PhD'),
+            # Raw patterns
+            ("First_Author_Sex, Treatment('Male'))[Female]", 'Female vs Male'),
+            ("PhD_Postdoc, Treatment('PhD'))[Post-doc]", 'Post-doc vs PhD')
+        ],
+        'Leading Author Variables': [
+            ('Leading Author Sex: Female', 'Female vs Male'),
+            ('Junior Senior: Junior PI', 'Junior vs Senior'),
+            ('F And L: True', 'F and L (after 1995)'),
+            ('F And L: Origininal F and L', 'F and L (original vs exploratory)'),
+            ('First Paper Before 1995: True', 'First paper before 1995 (Yes vs No)'),
+            ('Continuity: True', 'Continuity vs Exploratory'),
+            # Raw patterns
+            ("Leading_Author_Sex, Treatment('Male'))[Female]", 'Female vs Male'),
+            ("Junior_Senior, Treatment('Senior PI'))[Junior PI]", 'Junior vs Senior'),
+            ("F_and_L, Treatment('False'))[True]", 'First Author in the field\n(Yes vs No)'),
+            #("F_and_L, Treatment('False'))[Origininal F and L]", 'F and L (original vs exploratory)'),
+            ('first_paper_before_1995, Treatment(False))[True]', 'First paper before 1995 \n(Yes vs No)'),
+            ('Continuity, Treatment(False))[True]', 'Continuity vs Exploratory')
+        ]
+    }
+    
+    # Handle case where data doesn't have variable names as index
+    if 'Unnamed: 0' in data.columns:
+        # Use the 'Unnamed: 0' column as variable names
+        var_names = data['Unnamed: 0'].tolist()
+        data_dict = data.set_index('Unnamed: 0').to_dict('index')
+    else:
+        # Use the index as variable names
+        var_names = data.index.tolist()
+        data_dict = data.to_dict('index')
+    
+    # Organize variables by custom categories using simple pattern matching
+    organized_categories = {}
+    
+    for var_name in var_names:
+        # Skip if var_name is not a string
+        if not isinstance(var_name, str):
+            continue
+            
+        for category, patterns in custom_categories.items():
+            for pattern, custom_label in patterns:
+                if pattern in var_name:
+                    if category not in organized_categories:
+                        organized_categories[category] = []
+                    
+                    # Get data row
+                    data_row = data_dict[var_name] if var_name in data_dict else data.loc[var_name]
+                    
+                    # Store just the custom label for now, we'll add OR values later
+                    display_label = custom_label
+                    
+                    organized_categories[category].append((display_label, data_row, False))
+                    break
+    
+    # Build plot items in desired order
+    plot_items = []
+    #category_order = ['Last Authors', 'First Authors', 'Years', 'University Ranking', 'Journals']
+    category_order = reversed([k for k,v in custom_categories.items()])
+    for category in category_order:
+        if category in organized_categories:
+            var_items = organized_categories[category]
+            
+            # Add variables in reverse order for proper display
+            var_items.reverse()
+            plot_items.extend(var_items)
+            
+            # Add category header
+            plot_items.append((category, None, True))
+    
+    if not plot_items:
+        print("No matching variables found for custom categories")
+        return None, None
+    
+    # Extract components for plotting
+    clean_labels = [item[0] for item in plot_items]
+    data_for_plot = [item[1] for item in plot_items]
+    is_header = [item[2] for item in plot_items]
+    y_positions = list(range(len(plot_items)))
+    
+    # Create the plot with wider figure for better OR alignment
+    fig, ax = plt.subplots(figsize=(22, max(6, len(clean_labels)*0.65)))
+    
+    # Generate appropriate ticks and plot limits
+    ticks, plot_min, plot_max = generate_forest_plot_ticks(data)
+    
+    # Plot error bars and points 
+    for y_pos, data_row in zip(y_positions, data_for_plot):
+        if data_row is not None:  # Skip category headers
+            or_val = data_row['OR']
+            or_low = data_row['OR_low'] 
+            or_high = data_row['OR_high']
+            
+            ax.errorbar(or_val, y_pos,
+                        xerr=[[or_val-or_low], [or_high-or_val]],
+                        fmt='o', color=color, ecolor='black', capsize=4, 
+                        markersize=6, linewidth=2)
+    
+    # Reference line at OR = 1
+    ax.axvline(1, ls='--', color='red', alpha=0.7, linewidth=1)
+    
+    # Formatting
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(clean_labels, fontsize=MEDIUM_SIZE)
+    
+    # Add header for OR values column
+    ax.text(-0.25, len(plot_items)-1, "Odds Ratio (94% HDI)", transform=ax.get_yaxis_transform(), 
+           fontsize=BIGGER_SIZE, va='center', ha='left', fontweight='bold')
+    
+    # Position category headers and items, and add OR values between labels and forest plot
+    for i, (is_hdr, data_row) in enumerate(zip(is_header, data_for_plot)):
+        if is_hdr:
+            # Category headers: bold, left-aligned, far left
+            ax.get_yticklabels()[i].set_fontweight('bold')
+            ax.get_yticklabels()[i].set_fontsize(BIGGER_SIZE)
+            ax.get_yticklabels()[i].set_horizontalalignment('left')
+            ax.get_yticklabels()[i].set_x(-0.8)  # Far left for category headers
+        else:
+            # Category items: normal weight, positioned with variable names on far left
+            ax.get_yticklabels()[i].set_horizontalalignment('left')
+            ax.get_yticklabels()[i].set_x(-0.7)  # Position labels further left
+            
+            # Add OR values as separate text between labels and forest plot
+            if data_row is not None:
+                or_val = f"{data_row['OR']:.2f}"
+                ci_low = f"{data_row['OR_low']:.2f}"
+                ci_high = f"{data_row['OR_high']:.2f}"
+                or_text = f"{or_val} ({ci_low}, {ci_high})"
+                
+                # Add OR text positioned between labels and forest plot
+                ax.text(-0.2, i, or_text, transform=ax.get_yaxis_transform(), 
+                       fontsize=MEDIUM_SIZE, va='center', ha='left')
+    
+    ax.set_xlabel("Odds Ratio (log scale)", fontsize=BIGGER_SIZE)
+    ax.set_xscale('log')
+    ax.set_xticks(ticks)
+    ax.set_xticklabels([str(tick) for tick in ticks])
+    ax.set_title(title, fontsize=BIGGER_SIZE, pad=20)
+    ax.set_xlim(plot_min, plot_max)
+    
+    # Clean styling
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.tick_params(left=False)
+    ax.grid(True, alpha=0.3, axis='x')
+    ax.set_axisbelow(True)
+    
+    # Adjust layout
+    plt.tight_layout()
+    return fig, ax
+
 # Convenience function for random effects forest plots
 def create_random_effects_forest_plot(random_effects_summary, title, color='navy', n_show=15):
     """

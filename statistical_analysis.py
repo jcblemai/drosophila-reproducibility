@@ -268,9 +268,9 @@ df[['year_s1','year_s2','year_s3']] = pd.DataFrame(year_splines, index=df.index)
 #df['challenged_flag'] = df['assessment_type'].eq('Unchallenged, logically inconsistent').astype(int) 
 #df['challenged_flag'] = df['assessment_type'].eq('Unchallenged').astype(int) 
 #df['challenged_flag'] = df['assessment_type_grouped'].eq('Mixed').astype(int)
-df['challenged_flag'] = df['assessment_type_grouped'].eq('Verified').astype(int) 
+#df['challenged_flag'] = df['assessment_type_grouped'].eq('Verified').astype(int) 
 #df['challenged_flag'] = df['assessment_type_grouped'].eq('Partially Verified').astype(int) 
-#df['challenged_flag'] = df['assessment_type_grouped'].eq('Unchallenged').astype(int) 
+df['challenged_flag'] = df['assessment_type_grouped'].eq('Unchallenged').astype(int) 
 # Bambi syntax – common (fixed) effects + group-specific intercepts
 # This figure lacks being trained in traditional lab 
 # and having done a paper as first author in an immunity lab and 
@@ -374,6 +374,13 @@ all_effects = pd.concat([
 fig, ax = stat_lib.create_forest_plot(all_effects)
 plt.savefig('figM2_forest_plot.png', dpi=300, bbox_inches='tight')
 
+import importlib
+importlib.reload(stat_lib)
+# Create custom forest plot with better organization and labels
+fig2, ax2 = stat_lib.create_forest_plot2(all_effects, "Odds Ratios for Claim Reproducibility")
+plt.savefig('figM2_custom_forest_plot.png', dpi=300, bbox_inches='tight')
+plt.show()
+
 # Create elegant forest plot using forestplot packages
 ax_elegant = stat_lib.create_elegant_forest_plot(all_effects, "")
 plt.savefig('figM2_elegant_forest_plot.png', dpi=300, bbox_inches='tight')
@@ -383,6 +390,7 @@ plt.show()
 first_author_formatted.to_csv('tableM2_first_author_effects.csv')
 leading_author_formatted.to_csv('tableM2_leading_author_effects.csv')
 paper_effects_formatted.to_csv('tableM2_paper_journal_effects.csv')
+all_effects.to_csv('tableM2_all_effectsdebug.csv')
 
 # Save combined effects table
 all_effects_formatted = stat_lib.format_results_table(all_effects, clean_variable_names=True)
