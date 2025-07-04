@@ -16,7 +16,7 @@ import wrangling
 
 # %%
 # Load data
-df = pd.read_csv('preprocessed_data/claims_db_truncated_for_llm.csv')
+df = pd.read_csv('preprocessed_data/claims_db_truncated.csv')
 df["assessment_type"].unique()
 
 # %%

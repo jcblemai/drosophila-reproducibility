@@ -1,28 +1,70 @@
-La liste des claims :
-https://reprosci.epfl.ch/workspaces/3tebs5/get_claims
+# Companiong repository for "A retrospective analysis of 400 publications reveals patterns of irreproducibility across an entire life sciences research field"
 
-Les stats sur les auteurs:
-https://reprosci.epfl.ch/download?f=author_stats
+## Overview
 
-Les raisons des ‘challenges:
-https://reprosci.epfl.ch/reasons
+This repository contains the complete analysis code and data for a comprehensive study examining reproducibility patterns across 400 publications in Drosophila research.
 
-Les citations par article:
-https://reprosci.epfl.ch/download?f=citation_counts
+## Repository Structure
 
-Comment plot les premiers authors.
-Sex c'est la même chose
+```
+├── preprocessed_data/          # Processed datasets ready for analysis
+├── analysis_claims.py         # Main claim analysis (Figures 1-3)
+├── analysis_authors_first.py  # First author analysis (Figures 4-5)
+├── analysis_authors_last.py   # Last author analysis (Figures 6-7, 9)
+├── statistical_analysis.py    # Multivariate model (Figure 10)
+├── plot_info.py              # Plotting utilities
+├── wrangling.py              # Data processing functions
+├── stat_lib.py               # Statistical analysis functions
+├── preprocess_db.ipynb       # Database preprocessing
+└── preprocess_xlsx.ipynb     # Excel file preprocessing
+```
 
-Triage_Last_author > fichier par papa: 
-Last + First, toutes les pairs unique. 
-1> male
+## Quick Start
 
-autheurs > on pourrait parler en claim ou en 
+### Option 1: Using Preprocessed Data (Recommended)
 
-extension du domaine > par pays.
-IVY league > passer à top X 
+The simplest way to reproduce all figures and analyses is to use the preprocessed data stored in `preprocessed_data/`:
 
+```bash
+# Run the main analyses
+python analysis_claims.py        # Generates Main Text Figures 1-3
+python analysis_authors_first.py # Generates Main Text Figures 4-5
+python analysis_authors_last.py  # Generates Main Text Figures 6-7, 9
+python statistical_analysis.py   # Generates Main Text Figure 10
+```
+This generates all paper figures, all tables, all numbers in the text with Wilson confidence interval, all the ddd-ratios for categorical variable comparison with significance test, and the main model, a random effect mixed regression (with Bambi) with diagnostic checks (rhat, posterior predictive checks) ... 
 
-newcomer experienced dans la database > dépends si dans un la bao.
+### Option 2: Full Preprocessing Pipeline
 
-5-6 author qui étais furst et qui snt devenue last, quelque chose à faire ?
+To reproduce the complete preprocessing pipeline:
+
+1. Download the SQL dump from the ReproSci database (https://reprosci.epfl.ch)
+2. Run `preprocess_db.ipynb` to process the database
+3. Run `preprocess_xlsx.ipynb` to extract manual covariates from Excel files
+4. Execute the analysis scripts as above
+
+## Data Files store in the repository.
+
+### Core Datasets (`processed_data/`)
+
+- **`article_db.csv`**: Article metadata (journal, year) from ReproSci database
+- **`author_db.csv`**: Author information (sex, etc.) from ReproSci database
+- **`claims_db_truncated.csv`**: Main dataset with one row per claim, merged with article and author data
+- **`first_author_claims.csv`**: First author covariates merged with claim data
+- **`last_author_claims.csv`**: Last author covariates merged with claim data
+
+## Data Sources
+
+The analysis uses data from the ReproSci database (https://reprosci.epfl.ch):
+- Claims database: https://reprosci.epfl.ch/workspaces/3tebs5/get_claims
+- Author statistics: https://reprosci.epfl.ch/download?f=author_stats
+- Challenge reasons: https://reprosci.epfl.ch/reasons
+- Citation counts: https://reprosci.epfl.ch/download?f=citation_counts
+
+## Dependencies
+- PyMC (for Bayesian modeling)
+- Bambi for model buiding
+- pandas, numpy (data manipulation)
+- matplotlib, seaborn (visualization)
+- scipy (statistical tests)
+
