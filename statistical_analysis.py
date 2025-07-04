@@ -264,13 +264,13 @@ year_splines = patsy.bs(df['year'], df=3, include_intercept=False)
 # patsy.bs returns a design‐matrix; we add columns directly:
 df[['year_s1','year_s2','year_s3']] = pd.DataFrame(year_splines, index=df.index)
  
-#df['challenged_flag'] = df['assessment_type_grouped'].eq('Challenged').astype(int) 
+df['challenged_flag'] = df['assessment_type_grouped'].eq('Challenged').astype(int) 
 #df['challenged_flag'] = df['assessment_type'].eq('Unchallenged, logically inconsistent').astype(int) 
 #df['challenged_flag'] = df['assessment_type'].eq('Unchallenged').astype(int) 
 #df['challenged_flag'] = df['assessment_type_grouped'].eq('Mixed').astype(int)
 #df['challenged_flag'] = df['assessment_type_grouped'].eq('Verified').astype(int) 
 #df['challenged_flag'] = df['assessment_type_grouped'].eq('Partially Verified').astype(int) 
-df['challenged_flag'] = df['assessment_type_grouped'].eq('Unchallenged').astype(int) 
+#df['challenged_flag'] = df['assessment_type_grouped'].eq('Unchallenged').astype(int) 
 # Bambi syntax – common (fixed) effects + group-specific intercepts
 # This figure lacks being trained in traditional lab 
 # and having done a paper as first author in an immunity lab and 
@@ -302,8 +302,8 @@ priors = {
 model = bmb.Model(formula, df, family="bernoulli", dropna=True)
 model.set_priors(priors)
 # Full NUTS sampling
-idata = model.fit(draws=2000, 
-                tune=1000, 
+idata = model.fit(draws=4000, 
+                tune=4000, 
                 chains=4, 
                 cores=4, 
                 target_accept=0.9, 
