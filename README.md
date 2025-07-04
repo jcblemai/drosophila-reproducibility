@@ -1,4 +1,4 @@
-# Companiong repository for "A retrospective analysis of 400 publications reveals patterns of irreproducibility across an entire life sciences research field"
+# Companion repository for _A retrospective analysis of 400 publications reveals patterns of irreproducibility across an entire life sciences research field_
 
 ## Overview
 
