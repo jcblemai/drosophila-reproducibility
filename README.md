@@ -2,7 +2,13 @@
 
 ## Overview
 
-This repository contains the complete analysis code and data for a comprehensive study examining reproducibility patterns across 400 publications in Drosophila research.
+This repository contains the complete analysis code and data for a comprehensive study examining reproducibility patterns across 400 publications in Drosophila research. It is used to generates all figure (see example below) and all statistical analysis.
+
+<img width="300" alt="image" src="https://github.com/user-attachments/assets/416619e7-a2c2-41cf-9384-cf483a747708" />
+
+<img width="300" alt="image" src="https://github.com/user-attachments/assets/e1f3297f-3d6c-40dd-af08-dab6e50c7d8c" />
+
+<img width="300" alt="image" src="https://github.com/user-attachments/assets/c0a30fc9-8976-4968-b0a6-0dd7b5571f62" />
 
 ## Repository Structure
 
@@ -54,8 +60,7 @@ To reproduce the complete preprocessing pipeline:
 - **`last_author_claims.csv`**: Last author covariates merged with claim data
 
 ## Data Sources
-
-The analysis uses data from the ReproSci database (https://reprosci.epfl.ch):
+The analysis uses data from the ReproSci database (https://reprosci.epfl.ch). It is built from an SQL dump but you can also query it using:
 - Claims database: https://reprosci.epfl.ch/workspaces/3tebs5/get_claims
 - Author statistics: https://reprosci.epfl.ch/download?f=author_stats
 - Challenge reasons: https://reprosci.epfl.ch/reasons
